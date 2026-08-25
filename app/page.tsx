@@ -58,7 +58,7 @@ function FeaturesSection() {
         </svg>
       ),
       title: "One Account, All Products",
-      description: "Sign in once with GitHub or GitLab and manage all Freetime Maker products from a single dashboard.",
+      description: "Sign in once with your Account and manage all Freetime Maker products from a single dashboard.",
     },
     {
       icon: (
