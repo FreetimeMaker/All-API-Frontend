@@ -2,7 +2,7 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/client";
 
-function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "modrinth" }) {
+function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "custom:modrinth" }) {
   if (provider === "github") {
     return (
       <svg width="18" height="18" viewBox="0 0 16 16" fill="#e2e8f0" aria-hidden>
@@ -27,7 +27,7 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "modrinth"
 export default function LoginPage() {
   const supabase = createClient();
 
-  async function redirectTo(provider: "github" | "gitlab" | "modrinth") {
+  async function redirectTo(provider: "github" | "gitlab" | "custom:modrinth") {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -53,8 +53,8 @@ export default function LoginPage() {
             <ProviderIcon provider="gitlab" />
             <span className="font-medium text-slate-200">Sign in with GitLab</span>
           </button>
-          <button onClick={() => redirectTo("modrinth")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
-            <ProviderIcon provider="modrinth" />
+          <button onClick={() => redirectTo("custom:modrinth")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
+            <ProviderIcon provider="custom:modrinth" />
             <span className="font-medium text-slate-200">Sign in with Modrinth</span>
           </button>
         </div>
