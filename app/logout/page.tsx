@@ -7,12 +7,21 @@ export default function LogoutPage() {
   const [user, setUser] = useState<any>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const AUTH_KEYS = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
+
+  function clearAuth() {
+    AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+  }
+
   useEffect(() => {
     let mounted = true;
     fetch("/api/session")
       .then((r) => r.json())
       .then((j) => {
         if (!mounted) return;
+        if (!j?.loggedIn) {
+          clearAuth();
+        }
         setLoggedIn(Boolean(j?.loggedIn));
         setUser(j?.user ?? null);
       })
@@ -26,15 +35,20 @@ export default function LogoutPage() {
   async function handleLogout() {
     setMessage(null);
     try {
+      clearAuth();
       const res = await fetch(`/api/proxy/api/v1/auth/logout`, { method: "POST" });
       if (!res.ok) {
         setMessage(`Logout failed: ${res.status}`);
       } else {
         setMessage("Erfolgreich abgemeldet.");
         setLoggedIn(false);
+        setUser(null);
       }
     } catch (e: any) {
+      clearAuth();
       setMessage(`Error: ${e?.message ?? e}`);
+      setLoggedIn(false);
+      setUser(null);
     }
   }
 
