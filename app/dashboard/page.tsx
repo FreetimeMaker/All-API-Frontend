@@ -20,6 +20,11 @@ interface ProductsData {
   products: Array<{ id: number; name: string; price: number; currency: string; stock: number }>;
 }
 
+interface Purchase {
+  productId: number;
+  purchasedAt: string;
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
@@ -56,6 +61,7 @@ export default function DashboardPage() {
   const accountAge = user.created_at
     ? Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
+  const purchases: Purchase[] = user.user_metadata?.purchases || [];
 
   const accountStats = [
     {
@@ -66,18 +72,18 @@ export default function DashboardPage() {
       color: health?.ok ? "emerald" : "red",
     },
     {
-      title: "Account Provider",
-      value: provider.charAt(0).toUpperCase() + provider.slice(1),
-      change: "Verified",
-      icon: "🔗",
-      color: "emerald",
+      title: "My Purchases",
+      value: purchases.length.toString(),
+      change: purchases.length > 0 ? "Active" : "None",
+      icon: "📦",
+      color: "indigo",
     },
     {
       title: "Shop Products",
       value: products?.count?.toString() || "0",
-      change: products?.count ? `${products.count} Active` : "None",
-      icon: "📦",
-      color: "indigo",
+      change: products?.count ? `${products.count} Available` : "None",
+      icon: "🛒",
+      color: "amber",
     },
     {
       title: "Account Age",
@@ -157,9 +163,10 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-slate-100">Quick Actions</h2>
           </div>
           <div className="p-4 flex flex-col gap-2">
+            <a href="/dashboard/shop" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">🛒 Shop</a>
+            <a href="/dashboard/purchases" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">📦 My Purchases</a>
             <a href="/dashboard/profile" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">👤 Edit Profile</a>
             <a href="/dashboard/settings" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">⚙️ Settings</a>
-            <a href="/dashboard/stats" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">📈 Statistics</a>
             <a href="/health" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">💓 System Status</a>
             <div className="mt-2 pt-2 border-t border-slate-700">
               <button onClick={async () => { await supabase.auth.signOut(); router.push("/login"); }} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-red-900/50 text-red-400 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors">🚪 Sign Out</button>
