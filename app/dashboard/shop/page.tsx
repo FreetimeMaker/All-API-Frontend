@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import SolanaPayModal from "@/app/components/dashboard/SolanaPayModal";
 
 interface Product {
   id: number;
@@ -25,8 +26,10 @@ export default function ShopPage() {
   const [user, setUser] = useState<User | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState<number | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [payingProduct, setPayingProduct] = useState<Product | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -42,19 +45,20 @@ export default function ShopPage() {
     }).catch(() => setLoading(false));
   }, [supabase]);
 
-  async function handleBuy(product: Product) {
+  function handleBuy(product: Product) {
     if (!user) return;
-    setBuying(product.id);
+    setPayingProduct(product);
+    setError(null);
     setSuccess(null);
+    setShowPayModal(true);
+  }
 
-    const alreadyOwned = purchases.some((p: Purchase) => p.productId === product.id);
-    if (alreadyOwned) {
-      setBuying(null);
-      return;
-    }
+  async function handlePaymentSuccess(signature: string) {
+    setShowPayModal(false);
+    if (!payingProduct || !user) return;
 
     const newPurchase: Purchase = {
-      productId: product.id,
+      productId: payingProduct.id,
       purchasedAt: new Date().toISOString(),
     };
     const updatedPurchases = [...purchases, newPurchase];
@@ -65,10 +69,17 @@ export default function ShopPage() {
 
     if (!error) {
       setPurchases(updatedPurchases);
-      setSuccess(`${product.name} added to your account!`);
-      setTimeout(() => setSuccess(null), 3000);
+      setSuccess(`${payingProduct.name} purchased! Tx: ${signature.slice(0, 8)}...`);
+      setTimeout(() => setSuccess(null), 8000);
     }
-    setBuying(null);
+    setPayingProduct(null);
+  }
+
+  function handlePaymentError(msg: string) {
+    setShowPayModal(false);
+    setPayingProduct(null);
+    setError(`Payment failed: ${msg}`);
+    setTimeout(() => setError(null), 5000);
   }
 
   function isOwned(productId: number) {
@@ -90,12 +101,18 @@ export default function ShopPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-slate-100">Shop</h1>
-        <p className="text-slate-400">Browse and purchase Freetime Maker products.</p>
+        <p className="text-slate-400">Browse and purchase Freetime Maker products with Solana Pay.</p>
       </header>
 
       {success && (
         <div className="bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 px-4 py-3 rounded-lg text-sm font-medium">
           {success}
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-amber-950/60 border border-amber-800/50 text-amber-300 px-4 py-3 rounded-lg text-sm">
+          {error}
         </div>
       )}
 
@@ -140,10 +157,13 @@ export default function ShopPage() {
                     ) : (
                       <button
                         onClick={() => handleBuy(product)}
-                        disabled={buying === product.id}
-                        className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                        disabled={showPayModal}
+                        className="px-4 py-2 text-sm font-medium rounded-lg bg-[#9945FF] text-white hover:bg-[#8833EE] transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
-                        {buying === product.id ? "Processing..." : "Buy Now"}
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                          <path d="M2.5 5.5L8 2L13.5 5.5V10.5L8 14L2.5 10.5V5.5Z" fill="white" />
+                        </svg>
+                        Buy Now
                       </button>
                     )}
                   </div>
@@ -153,6 +173,16 @@ export default function ShopPage() {
           })}
         </div>
       )}
+
+      <SolanaPayModal
+        open={showPayModal}
+        amount={payingProduct?.price || 0}
+        label={payingProduct ? payingProduct.name : ""}
+        message={payingProduct ? `Purchase ${payingProduct.name}` : ""}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+        onClose={() => { setShowPayModal(false); setPayingProduct(null); }}
+      />
     </div>
   );
 }

@@ -23,8 +23,9 @@ interface Subscription {
 
 const fallbackPlans: Plan[] = [
   { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
-  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
-  { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
+  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts"] },
+  { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities"] },
+  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "month", features: ["Everything the App has to offer"]},
 ];
 
 export default function SubscriptionsPage() {
