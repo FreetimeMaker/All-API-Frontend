@@ -36,8 +36,8 @@ async function forward(req: NextRequest, pathArray: string[] | string) {
   try {
     const path = Array.isArray(pathArray) ? pathArray.join("/") : String(pathArray);
 
-    // Check health unless it's the health endpoint itself
-    if (!path.includes("health")) {
+    // Check health unless it's the health endpoint itself or a static asset
+    if (!path.includes("health") && !path.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|css|js)$/i)) {
       const isHealthy = await checkApiHealth();
       if (!isHealthy) {
         return NextResponse.json(

@@ -84,7 +84,7 @@ export default function PurchasesPage() {
             <div key={product.id} className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-4 flex items-center gap-4">
               <div className="h-16 w-16 rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {product.imageUrl ? (
-                  <img src={`https://all-api-node.vercel.app${product.imageUrl}`} alt={product.name} className="h-full w-full object-contain" />
+                  <img src={`/api/proxy/${product.imageUrl.replace(/^\//, "")}`} alt={product.name} className="h-full w-full object-contain" />
                 ) : (
                   <span className="text-2xl">📦</span>
                 )}

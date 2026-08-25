@@ -112,7 +112,7 @@ export default function ShopPage() {
                 <div className="bg-slate-900 h-40 flex items-center justify-center">
                   {product.imageUrl ? (
                     <img
-                      src={`https://all-api-node.vercel.app${product.imageUrl}`}
+                      src={`/api/proxy/${product.imageUrl.replace(/^\//, "")}`}
                       alt={product.name}
                       className="h-full w-full object-contain p-4"
                     />

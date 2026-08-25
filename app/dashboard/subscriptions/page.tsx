@@ -54,18 +54,23 @@ export default function SubscriptionsPage() {
   }
 
   async function fetchData() {
-    try {
-      const headers = await getAuthHeaders();
-      const [subsRes, plansRes] = await Promise.all([
-        fetch("/api/proxy/api/v1/geoweather/subscriptions", { headers }),
-        fetch("/api/proxy/api/v1/geoweather/subscriptions/plans", { headers }),
-      ]);
+    const headers = await getAuthHeaders();
+    const fallbackPlans: Plan[] = [
+      { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
+      { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
+      { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
+    ];
 
+    try {
+      const subsRes = await fetch("/api/proxy/api/v1/geoweather/subscriptions", { headers });
       if (subsRes.ok) {
         const subsData = await subsRes.json();
         setSubscriptions(Array.isArray(subsData) ? subsData : subsData.subscriptions || []);
       }
+    } catch { /* ignore */ }
 
+    try {
+      const plansRes = await fetch("/api/proxy/api/v1/geoweather/subscriptions/plans", { headers });
       if (plansRes.ok) {
         const plansData = await plansRes.json();
         const rawPlans = Array.isArray(plansData) ? plansData : plansData.plans || [];
@@ -78,19 +83,12 @@ export default function SubscriptionsPage() {
           features: Array.isArray(p.features) ? p.features.map(String) : [],
         })));
       } else {
-        setPlans([
-          { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
-          { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
-          { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
-        ]);
+        setPlans(fallbackPlans);
       }
     } catch {
-      setPlans([
-        { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
-        { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
-        { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
-      ]);
+      setPlans(fallbackPlans);
     }
+
     setLoading(false);
   }
 
