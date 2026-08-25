@@ -3,6 +3,15 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  interval: string;
+  features: string[];
+}
+
 interface Subscription {
   id: number;
   plan: string;
@@ -15,38 +24,9 @@ interface Subscription {
   country: string;
 }
 
-const plans = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    currency: "USD",
-    interval: "month",
-    features: ["1 city", "Daily forecast", "Basic alerts"],
-    color: "slate",
-  },
-  {
-    id: "freemium",
-    name: "Freemium",
-    price: 2.99,
-    currency: "USD",
-    interval: "month",
-    features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support", "Community access"],
-    color: "indigo",
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 9.99,
-    currency: "USD",
-    interval: "month",
-    features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access", "Historical data"],
-    color: "amber",
-  },
-];
-
 export default function SubscriptionsPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,31 +38,60 @@ export default function SubscriptionsPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => {
       setUser(user);
-      if (user) fetchSubscriptions();
+      if (user) fetchData();
       else setLoading(false);
     });
   }, [supabase]);
 
-  async function fetchSubscriptions() {
+  async function getAuthHeaders(): Promise<Record<string, string>> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async function fetchData() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const headers = await getAuthHeaders();
 
-      const res = await fetch("/api/proxy/api/v1/geoweather/subscriptions", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const [subsRes, plansRes] = await Promise.all([
+        fetch("/api/proxy/api/v1/geoweather/subscriptions", { headers }),
+        fetch("/api/proxy/api/v1/geoweather/subscriptions/plans", { headers }),
+      ]);
 
-      if (res.ok) {
-        const data = await res.json();
-        setSubscriptions(Array.isArray(data) ? data : data.subscriptions || []);
-        setError(null);
-      } else if (res.status === 401) {
-        setError("Authentication required. Please sign in again.");
+      if (subsRes.ok) {
+        const subsData = await subsRes.json();
+        setSubscriptions(Array.isArray(subsData) ? subsData : subsData.subscriptions || []);
+      }
+
+      if (plansRes.ok) {
+        const plansData = await plansRes.json();
+        const rawPlans = Array.isArray(plansData) ? plansData : plansData.plans || [];
+        setPlans(rawPlans.map((p: Record<string, unknown>) => ({
+          id: String(p.id || p.planId || p.slug || ""),
+          name: String(p.name || p.plan || p.id || ""),
+          price: Number(p.price || p.amount || 0),
+          currency: String(p.currency || "USD"),
+          interval: String(p.interval || p.billingCycle || "month"),
+          features: Array.isArray(p.features) ? p.features.map(String) : [],
+        })));
       } else {
-        setError("Failed to load subscriptions.");
+        setPlans([
+          { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
+          { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
+          { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
+        ]);
+      }
+
+      if (!subsRes.ok && !plansRes.ok && subsRes.status === 401) {
+        setError("Authentication required. Please sign in again.");
       }
     } catch {
-      setError("Failed to load subscriptions.");
+      setError("Failed to load data.");
+      setPlans([
+        { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
+        { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
+        { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access"] },
+      ]);
     }
     setLoading(false);
   }
@@ -96,21 +105,16 @@ export default function SubscriptionsPage() {
     setSuccess(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/proxy/api/v1/geoweather/subscriptions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({ plan: planId }),
       });
 
       if (res.ok) {
         setSuccess(`Subscribed to ${plan.name} plan!`);
-        fetchSubscriptions();
+        fetchData();
       } else {
         const err = await res.json().catch(() => null);
         alert(err?.message || "Failed to subscribe.");
@@ -127,12 +131,10 @@ export default function SubscriptionsPage() {
     setCancelling(sub.id);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/proxy/api/v1/geoweather/subscriptions/${sub.id}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers,
       });
 
       if (res.ok) {
@@ -206,30 +208,29 @@ export default function SubscriptionsPage() {
                     <span className="text-sm text-slate-500">/{plan.interval}</span>
                   )}
                 </div>
-                <ul className="space-y-2 mb-6 flex-1">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-slate-300">
-                      <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                {plan.features.length > 0 && (
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm text-slate-300">
+                        <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {subscribed ? (
-                  <button
-                    disabled
-                    className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default"
-                  >
+                  <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default">
                     Current Plan
                   </button>
                 ) : (
                   <button
                     onClick={() => handleSubscribe(plan.id)}
-                    disabled={subscribing === plan.id || plan.id === "free"}
+                    disabled={subscribing === plan.id || plan.price === 0}
                     className="w-full py-2.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
                   >
-                    {subscribing === plan.id ? "Subscribing..." : plan.id === "free" ? "Included" : "Subscribe"}
+                    {subscribing === plan.id ? "Subscribing..." : plan.price === 0 ? "Included" : "Subscribe"}
                   </button>
                 )}
               </div>
