@@ -7,102 +7,60 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const AUTH_KEYS = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
+
+  function clearAuth() {
+    AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+  }
+
   useEffect(() => {
-    // Check for user_info from OAuth callback
-    const userInfo = localStorage.getItem('user_info');
-    if (userInfo) {
-      try {
-        const userData = JSON.parse(userInfo);
-        console.log("Dashboard: Using user info from OAuth callback:", userData);
-        setUser(userData);
-        setLoading(false);
-        return;
-      } catch (e) {
-        console.error("Dashboard: Error parsing user_info:", e);
-      }
+    const expiresAt = localStorage.getItem('token_expires_at');
+    if (expiresAt && Date.now() > Number(expiresAt)) {
+      clearAuth();
+      router.push("/login");
+      return;
     }
 
     const accessToken = localStorage.getItem('access_token');
     const authCode = localStorage.getItem('auth_code');
-    const userToken = localStorage.getItem('auth_token'); // New key from callback
-    console.log("Dashboard: Access token present:", !!accessToken, "Auth code present:", !!authCode, "Auth token present:", !!userToken);
-    
-    const headers: HeadersInit = {};
+    const userToken = localStorage.getItem('auth_token');
     const tokenToUse = accessToken || authCode || userToken;
-    
-    if (tokenToUse) {
-      headers['Authorization'] = `Bearer ${tokenToUse}`;
-      headers['x-access-token'] = tokenToUse; // Send via custom header as well
+
+    if (!tokenToUse) {
+      router.push("/login");
+      return;
     }
-    
+
     fetch("/api/session", {
-      headers
+      headers: {
+        'Authorization': `Bearer ${tokenToUse}`,
+        'x-access-token': tokenToUse,
+      },
     })
       .then(res => res.json())
       .then(data => {
-        console.log("Dashboard: Session check result:", data);
-        if (!data.loggedIn) {
-          console.log("Dashboard: Not logged in, redirecting to login");
-          router.push("/login");
-        } else {
-          console.log("Dashboard: Logged in, setting user:", data.user);
+        if (data.loggedIn && data.user) {
           setUser(data.user);
+        } else {
+          clearAuth();
+          router.push("/login");
         }
       })
-      .catch(error => {
-        console.error("Dashboard: Session check error:", error);
+      .catch(() => {
+        clearAuth();
         router.push("/login");
       })
       .finally(() => setLoading(false));
   }, [router]);
 
-  // Also check on mount if localStorage might have been set earlier
-  useEffect(() => {
-    const checkLocalStorage = () => {
-      const userInfo = localStorage.getItem('user_info');
-      if (userInfo && !user) {
-        try {
-          const userData = JSON.parse(userInfo);
-          console.log("Dashboard: Found user info in periodic check, setting user");
-          setUser(userData);
-          setLoading(false);
-        } catch (e) {
-          console.error("Dashboard: Error parsing user_info in periodic check:", e);
-        }
-      }
-    };
-
-    // Check immediately
-    checkLocalStorage();
-    
-    // Check again after a short delay to handle any timing issues
-    const timeout = setTimeout(checkLocalStorage, 100);
-    return () => clearTimeout(timeout);
-  }, [user]);
-
   async function handleLogout() {
     try {
-      // Clear all auth-related items from localStorage
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('auth_code');
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('token_type');
-      localStorage.removeItem('token_expires_at');
-      localStorage.removeItem('user_info');
-      
+      clearAuth();
       await fetch("/api/proxy/api/v1/auth/logout", { method: "POST" });
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Clear local storage on error as well
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('auth_code');
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('token_type');
-      localStorage.removeItem('token_expires_at');
-      localStorage.removeItem('user_info');
-      router.push("/login");
+    } catch (_) {
+      clearAuth();
     }
+    router.push("/login");
   }
 
   if (loading) {
