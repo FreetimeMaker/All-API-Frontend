@@ -7,21 +7,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    console.log("Dashboard: Checking session...");
-    
-    // Check for mock session first (for development)
-    const mockSession = localStorage.getItem('mock_session');
-    console.log("Dashboard: Mock session present:", mockSession);
-    
-    if (mockSession === 'true') {
-      const mockUser = JSON.parse(localStorage.getItem('mock_user') || '{}');
-      console.log("Dashboard: Using mock user:", mockUser);
-      setUser(mockUser);
-      setLoading(false);
-      return;
-    }
-
     // Check for user_info from OAuth callback
     const userInfo = localStorage.getItem('user_info');
     if (userInfo) {
@@ -73,16 +58,8 @@ export default function DashboardPage() {
   // Also check on mount if localStorage might have been set earlier
   useEffect(() => {
     const checkLocalStorage = () => {
-      const mockSession = localStorage.getItem('mock_session');
       const userInfo = localStorage.getItem('user_info');
-      console.log("Dashboard: Periodic check - Mock session:", mockSession, "User info:", !!userInfo);
-      
-      if (mockSession === 'true' && !user) {
-        const mockUser = JSON.parse(localStorage.getItem('mock_user') || '{}');
-        console.log("Dashboard: Found mock session in periodic check, setting user");
-        setUser(mockUser);
-        setLoading(false);
-      } else if (userInfo && !user) {
+      if (userInfo && !user) {
         try {
           const userData = JSON.parse(userInfo);
           console.log("Dashboard: Found user info in periodic check, setting user");
@@ -105,8 +82,6 @@ export default function DashboardPage() {
   async function handleLogout() {
     try {
       // Clear all auth-related items from localStorage
-      localStorage.removeItem('mock_session');
-      localStorage.removeItem('mock_user');
       localStorage.removeItem('access_token');
       localStorage.removeItem('auth_code');
       localStorage.removeItem('auth_token');
@@ -119,8 +94,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Logout failed:", error);
       // Clear local storage on error as well
-      localStorage.removeItem('mock_session');
-      localStorage.removeItem('mock_user');
       localStorage.removeItem('access_token');
       localStorage.removeItem('auth_code');
       localStorage.removeItem('auth_token');

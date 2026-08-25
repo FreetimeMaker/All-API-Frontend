@@ -79,14 +79,14 @@ export default function AuthNav() {
   async function handleLogout() {
     try {
       // Clear all auth-related items from localStorage
-      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info', 'mock_session', 'mock_user'];
+      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
       keys.forEach(k => localStorage.removeItem(k));
       
       // Try to logout from API
       await fetch("/api/proxy/api/v1/auth/logout", { method: "POST" });
       await fetchSession();
     } catch (_) {
-      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info', 'mock_session', 'mock_user'];
+      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
       keys.forEach(k => localStorage.removeItem(k));
       await fetchSession();
     }

@@ -17,12 +17,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const authCode = localStorage.getItem('auth_code');
         const userToken = localStorage.getItem('auth_token');
         const userInfo = localStorage.getItem('user_info');
-        const mockSession = localStorage.getItem('mock_session');
-        
-        console.log("Layout: Checking auth - tokens present:", !!accessToken, !!authCode, !!userToken, "user info:", !!userInfo, "mock session:", mockSession);
+        console.log("Layout: Checking auth - tokens present:", !!accessToken, !!authCode, !!userToken, "user info:", !!userInfo);
         
         // If we have any form of auth data, consider authenticated
-        if (accessToken || authCode || userToken || userInfo || mockSession === 'true') {
+        if (accessToken || authCode || userToken || userInfo) {
           setAuthenticated(true);
           setLoading(false);
           return;

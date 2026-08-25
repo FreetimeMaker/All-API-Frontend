@@ -102,21 +102,6 @@ npm start
 
 See [SECURITY.md](SECURITY.md) for detailed security information.
 
-## Development
-
-### Mock Authentication
-
-For development, you can use mock authentication:
-
-```javascript
-localStorage.setItem('mock_session', 'true');
-localStorage.setItem('mock_user', JSON.stringify({
-  name: 'Test User',
-  username: 'testuser',
-  email: 'test@example.com'
-}));
-```
-
 ## Troubleshooting
 
 ### Build Issues
