@@ -18,37 +18,44 @@ export default function AuthNav() {
     }
   }
 
+  const AUTH_KEYS = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
+
+  function clearAuth() {
+    AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+  }
+
   async function fetchSession() {
     setLoading(true);
     setError(null);
     try {
-      // Check for user_info from OAuth callback
-      const userInfo = localStorage.getItem('user_info');
-      if (userInfo) {
-        try {
-          const userData = JSON.parse(userInfo);
-          setLoggedIn(true);
-          setUser(userData);
-          setLoading(false);
-          return;
-        } catch (e) {
-          console.error("Error parsing user_info:", e);
-        }
+      const expiresAt = localStorage.getItem('token_expires_at');
+      if (expiresAt && Date.now() > Number(expiresAt)) {
+        clearAuth();
+        setLoggedIn(false);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
       const accessToken = localStorage.getItem('access_token');
       const authCode = localStorage.getItem('auth_code');
-      const userToken = localStorage.getItem('auth_token'); // New key from callback
-      const headers: HeadersInit = {};
+      const userToken = localStorage.getItem('auth_token');
       const tokenToUse = accessToken || authCode || userToken;
-      
-      if (tokenToUse) {
-        headers['Authorization'] = `Bearer ${tokenToUse}`;
-        headers['x-access-token'] = tokenToUse; // Send via custom header as well
+
+      if (!tokenToUse) {
+        setLoggedIn(false);
+        setUser(null);
+        setLoading(false);
+        return;
       }
-      
+
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${tokenToUse}`,
+        'x-access-token': tokenToUse,
+      };
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch("/api/session", {
         headers,
@@ -58,11 +65,16 @@ export default function AuthNav() {
 
       if (!res.ok) throw new Error(`status ${res.status}`);
       const j = await res.json();
-      setLoggedIn(Boolean(j?.loggedIn));
-      setUser(j?.user ?? null);
+
+      if (j?.loggedIn) {
+        setLoggedIn(true);
+        setUser(j?.user ?? null);
+      } else {
+        clearAuth();
+        setLoggedIn(false);
+        setUser(null);
+      }
     } catch (e: any) {
-      // Clear timeout if it was defined and we hit an error before it finished
-      // (This is just a safety measure)
       setError(e?.message ?? "Unknown error");
       setLoggedIn(false);
       setUser(null);
@@ -78,16 +90,11 @@ export default function AuthNav() {
 
   async function handleLogout() {
     try {
-      // Clear all auth-related items from localStorage
-      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
-      keys.forEach(k => localStorage.removeItem(k));
-      
-      // Try to logout from API
+      clearAuth();
       await fetch("/api/proxy/api/v1/auth/logout", { method: "POST" });
       await fetchSession();
     } catch (_) {
-      const keys = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
-      keys.forEach(k => localStorage.removeItem(k));
+      clearAuth();
       await fetchSession();
     }
   }

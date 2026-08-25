@@ -10,31 +10,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   useEffect(() => {
+    const AUTH_KEYS = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
+
+    function clearAuth() {
+      AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+    }
+
     async function checkAuth() {
       try {
-        // First check localStorage for tokens
         const accessToken = localStorage.getItem('access_token');
         const authCode = localStorage.getItem('auth_code');
         const userToken = localStorage.getItem('auth_token');
-        const userInfo = localStorage.getItem('user_info');
-        console.log("Layout: Checking auth - tokens present:", !!accessToken, !!authCode, !!userToken, "user info:", !!userInfo);
-        
-        // If we have any form of auth data, consider authenticated
-        if (accessToken || authCode || userToken || userInfo) {
-          setAuthenticated(true);
-          setLoading(false);
+        const expiresAt = localStorage.getItem('token_expires_at');
+
+        if (expiresAt && Date.now() > Number(expiresAt)) {
+          clearAuth();
+          router.push("/login");
           return;
         }
-        
-        // Otherwise check API session
-        const res = await fetch("/api/session");
+
+        const tokenToUse = accessToken || authCode || userToken;
+        if (!tokenToUse) {
+          router.push("/login");
+          return;
+        }
+
+        const res = await fetch("/api/session", {
+          headers: {
+            'Authorization': `Bearer ${tokenToUse}`,
+            'x-access-token': tokenToUse,
+          },
+        });
         const data = await res.json();
         if (data.loggedIn) {
           setAuthenticated(true);
         } else {
+          clearAuth();
           router.push("/login");
         }
       } catch (error) {
+        clearAuth();
         router.push("/login");
       } finally {
         setLoading(false);
