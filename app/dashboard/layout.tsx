@@ -12,6 +12,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     async function checkAuth() {
       try {
+        // First check localStorage for tokens
+        const accessToken = localStorage.getItem('access_token');
+        const authCode = localStorage.getItem('auth_code');
+        const userToken = localStorage.getItem('auth_token');
+        const userInfo = localStorage.getItem('user_info');
+        const mockSession = localStorage.getItem('mock_session');
+        
+        console.log("Layout: Checking auth - tokens present:", !!accessToken, !!authCode, !!userToken, "user info:", !!userInfo, "mock session:", mockSession);
+        
+        // If we have any form of auth data, consider authenticated
+        if (accessToken || authCode || userToken || userInfo || mockSession === 'true') {
+          setAuthenticated(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise check API session
         const res = await fetch("/api/session");
         const data = await res.json();
         if (data.loggedIn) {

@@ -11,7 +11,7 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
   }
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="#e2e8f0" aria-hidden>
-      <path d="M12 0l3 7h-6l3-7zm0 24l-3-7h6l-3 7zm-8-9l3-7h-6l3 7zm16 0l3-7h-6l3 7z" />
+      <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.84.84 0 0 1 5.39 1h13.22a.84.84 0 0 1 .8.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94zM12 20.13l8.5-6.07-1.08-3.33-7.42-5.32-7.42 5.32-1.08 3.33z" />
     </svg>
   );
 }
