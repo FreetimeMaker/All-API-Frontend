@@ -8,7 +8,7 @@ export default function ProfilePage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => setUser(user));
   }, [supabase]);
 
   if (!user) return null;

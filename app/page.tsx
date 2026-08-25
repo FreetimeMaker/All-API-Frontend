@@ -12,7 +12,7 @@ export default function Home() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => {
       if (user) {
         setLoggedIn(true);
         router.push("/dashboard");

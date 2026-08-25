@@ -9,7 +9,7 @@ export default function LogoutPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => {
       setLoading(false);
       if (!user) {
         router.push("/login");

@@ -18,7 +18,7 @@ function AuthCallbackContent() {
     }
 
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }: { error: Error | null }) => {
         if (error) {
           console.error("Session exchange error:", error.message);
           router.push("/login?error=" + encodeURIComponent("Authentication failed."));
