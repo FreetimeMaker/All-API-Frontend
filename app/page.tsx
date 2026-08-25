@@ -117,7 +117,7 @@ function HowItWorksSection() {
     {
       step: "1",
       title: "Sign In",
-      description: "Click Sign In and authenticate with GitHub or GitLab. Your session is securely managed via Supabase cookies.",
+      description: "Click Sign In and authenticate with your Account. Your session is securely managed via Supabase cookies.",
     },
     {
       step: "2",
@@ -187,7 +187,7 @@ function CTASection() {
         <div className="relative">
           <h2 className="text-3xl font-bold text-white">Ready to Get Started?</h2>
           <p className="mt-3 text-slate-400 max-w-md mx-auto">
-            Sign in with GitHub or GitLab and manage all Freetime Maker products from one account.
+            Sign in with your Account and manage all Freetime Maker products from one account.
           </p>
           <div className="mt-8">
             <Link
