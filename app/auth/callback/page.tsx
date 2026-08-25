@@ -11,9 +11,10 @@ function AuthCallbackContent() {
   useEffect(() => {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const errorDescription = searchParams.get("error_description");
 
     if (error) {
-      router.push("/login?error=" + encodeURIComponent(error));
+      router.push("/login?error=" + encodeURIComponent(errorDescription || error));
       return;
     }
 
@@ -21,13 +22,22 @@ function AuthCallbackContent() {
       supabase.auth.exchangeCodeForSession(code).then(({ error }: { error: Error | null }) => {
         if (error) {
           console.error("Session exchange error:", error.message);
-          router.push("/login?error=" + encodeURIComponent("Authentication failed."));
+          if (error.message.includes("PKCE")) {
+            router.push("/login?error=" + encodeURIComponent("Session expired. Please try again."));
+          } else {
+            router.push("/login?error=" + encodeURIComponent("Authentication failed."));
+          }
         } else {
           router.push("/dashboard");
         }
       });
     } else {
-      router.push("/login?error=" + encodeURIComponent("No authorization code received."));
+      const accessToken = searchParams.get("access_token");
+      if (accessToken) {
+        router.push("/dashboard");
+      } else {
+        router.push("/login?error=" + encodeURIComponent("No authorization code received."));
+      }
     }
   }, [router, searchParams, supabase]);
 

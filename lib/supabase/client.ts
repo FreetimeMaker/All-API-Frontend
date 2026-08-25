@@ -14,6 +14,14 @@ export function createClient() {
     );
   }
 
-  client = createBrowserClient(supabaseUrl, supabaseKey);
+  client = createBrowserClient(supabaseUrl, supabaseKey, {
+    cookieOptions: {
+      name: "sb-auth",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+      path: "/",
+      domain: undefined,
+    },
+  });
   return client;
 }

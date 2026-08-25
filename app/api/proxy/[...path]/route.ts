@@ -171,7 +171,7 @@ async function forward(req: NextRequest, pathArray: string[] | string) {
       method: req.method,
       headers,
       body,
-      redirect: "manual",
+      redirect: "follow",
       signal: controller.signal
     });
 
