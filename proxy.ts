@@ -15,22 +15,21 @@ export async function proxy(request: NextRequest) {
     const { createClient } = await import("@/lib/supabase/middleware");
     const { supabase, supabaseResponse } = createClient(request);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getClaims();
+    const isAuthenticated = !!data;
 
     const pathname = request.nextUrl.pathname;
 
-    if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
+    if (!isAuthenticated && protectedRoutes.some((route) => pathname.startsWith(route))) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
-      return Response.redirect(url);
+      return NextResponse.redirect(url);
     }
 
-    if (user && authRoutes.includes(pathname)) {
+    if (isAuthenticated && authRoutes.includes(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
-      return Response.redirect(url);
+      return NextResponse.redirect(url);
     }
 
     return supabaseResponse;

@@ -1,8 +1,9 @@
 import { createServerClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function createClient(request: NextRequest) {
-  let supabaseResponse = new Response(null);
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -20,15 +21,9 @@ export function createClient(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
-        supabaseResponse = new Response(null, {
-          status: supabaseResponse.status,
-          headers: supabaseResponse.headers,
-        });
+        supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.headers.append(
-            "Set-Cookie",
-            serializeCookieHeader(name, value, options)
-          )
+          supabaseResponse.cookies.set(name, value, options)
         );
         if (cacheHeaders) {
           Object.entries(cacheHeaders).forEach(([key, value]) => {
