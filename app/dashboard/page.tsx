@@ -53,7 +53,7 @@ export default function DashboardPage() {
         router.push("/login");
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [router];
 
   // Also check on mount if localStorage might have been set earlier
   useEffect(() => {
