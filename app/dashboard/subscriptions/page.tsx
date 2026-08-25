@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { pay, getPaymentStatus } from "@base-org/account";
+import SolanaPayModal from "@/app/components/dashboard/SolanaPayModal";
 
 interface Plan {
   id: string;
@@ -21,9 +21,6 @@ interface Subscription {
   currency: string;
 }
 
-const PAYMENT_RECIPIENT = process.env.NEXT_PUBLIC_BASE_PAYMENT_RECIPIENT || "0x0000000000000000000000000000000000000000";
-const USE_TESTNET = process.env.NEXT_PUBLIC_BASE_TESTNET !== "false";
-
 const fallbackPlans: Plan[] = [
   { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "Basic alerts"] },
   { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "Severe weather alerts", "Email support"] },
@@ -35,8 +32,9 @@ export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [paying, setPaying] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [payingPlan, setPayingPlan] = useState<Plan | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   useEffect(() => {
     fetch("/api/proxy/api/v1/geoweather/subscriptions/plans")
@@ -60,37 +58,26 @@ export default function SubscriptionsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handlePayment(plan: Plan) {
+  function handlePay(plan: Plan) {
     if (plan.price === 0) return;
-    setPaying(plan.id);
-    setSuccess(null);
+    setPayingPlan(plan);
     setError(null);
+    setSuccess(null);
+    setShowPayModal(true);
+  }
 
-    try {
-      const payment = await pay({
-        amount: plan.price.toFixed(2),
-        to: PAYMENT_RECIPIENT as `0x${string}`,
-        testnet: USE_TESTNET,
-      });
+  function handlePaymentSuccess(signature: string) {
+    setShowPayModal(false);
+    setPayingPlan(null);
+    setSuccess(`Successfully subscribed to ${payingPlan?.name}! Tx: ${signature.slice(0, 8)}...`);
+    setTimeout(() => setSuccess(null), 8000);
+  }
 
-      const { status } = await getPaymentStatus({
-        id: payment.id,
-        testnet: USE_TESTNET,
-      });
-
-      if (status === "completed") {
-        setSuccess(`Successfully subscribed to ${plan.name}!`);
-      } else {
-        setError(`Payment status: ${status}. Please try again.`);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Payment failed";
-      if (!msg.includes("User rejected")) {
-        setError(`Payment failed: ${msg}`);
-      }
-    }
-    setPaying(null);
-    setTimeout(() => { setSuccess(null); setError(null); }, 5000);
+  function handlePaymentError(msg: string) {
+    setShowPayModal(false);
+    setPayingPlan(null);
+    setError(`Payment failed: ${msg}`);
+    setTimeout(() => setError(null), 5000);
   }
 
   if (loading) {
@@ -108,7 +95,7 @@ export default function SubscriptionsPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-bold text-slate-100">GeoWeather Subscriptions</h1>
-        <p className="text-slate-400">Choose a plan and pay with USDC on Base.</p>
+        <p className="text-slate-400">Choose a plan and pay with Solana Pay.</p>
       </header>
 
       {success && (
@@ -137,7 +124,7 @@ export default function SubscriptionsPage() {
                 <span className="text-sm text-slate-500">/{plan.interval}</span>
               )}
               {plan.price > 0 && (
-                <p className="text-xs text-slate-500 mt-1">Paid in USDC on Base</p>
+                <p className="text-xs text-slate-500 mt-1">Paid with Solana Pay</p>
               )}
             </div>
             {plan.features.length > 0 && (
@@ -159,27 +146,14 @@ export default function SubscriptionsPage() {
                 </button>
               ) : (
                 <button
-                  onClick={() => handlePayment(plan)}
-                  disabled={paying !== null}
-                  className="w-full py-2.5 text-sm font-medium rounded-lg bg-[#0052FF] text-white hover:bg-[#0043CC] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => handlePay(plan)}
+                  disabled={showPayModal}
+                  className="w-full py-2.5 text-sm font-medium rounded-lg bg-[#9945FF] text-white hover:bg-[#8833EE] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {paying === plan.id ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <rect width="16" height="16" rx="2" fill="white"/>
-                        <path d="M8 3C5.24 3 3 5.24 3 8s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="#0052FF"/>
-                      </svg>
-                      Pay ${plan.price} USDC
-                    </>
-                  )}
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2.5 5.5L8 2L13.5 5.5V10.5L8 14L2.5 10.5V5.5Z" fill="white" />
+                  </svg>
+                  Pay ${plan.price}
                 </button>
               )}
             </div>
@@ -215,10 +189,19 @@ export default function SubscriptionsPage() {
 
       <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 text-center">
         <p className="text-xs text-slate-500">
-          Payments are processed via Base Pay (USDC on Base).
-          {USE_TESTNET && <span className="text-amber-400 ml-1">Testnet mode enabled.</span>}
+          Payments are processed via Solana Pay. Scan the QR code with any Solana wallet (Phantom, Solflare, etc.).
         </p>
       </div>
+
+      <SolanaPayModal
+        open={showPayModal}
+        amount={payingPlan?.price || 0}
+        label={payingPlan ? `GeoWeather ${payingPlan.name}` : ""}
+        message={payingPlan ? `Subscribe to ${payingPlan.name} plan` : ""}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+        onClose={() => { setShowPayModal(false); setPayingPlan(null); }}
+      />
     </div>
   );
 }
