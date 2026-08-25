@@ -16,7 +16,6 @@ function HeroSection() {
           Powered by Supabase Auth
         </div>
         <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight tracking-tight">
-          <span className="text-indigo-400">Freetime Maker</span>
           <span className="block">All API</span>
         </h1>
         <p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">

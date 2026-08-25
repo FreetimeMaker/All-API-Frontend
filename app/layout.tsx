@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Freetime Maker",
+  title: "All API",
   description: "Manage all Freetime Maker products from one account.",
 };
 
