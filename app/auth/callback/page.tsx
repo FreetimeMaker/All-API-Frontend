@@ -19,11 +19,21 @@ function AuthCallbackContent() {
     // Log callback parameters for debugging
     console.log("Auth callback received params:", Object.fromEntries(searchParams.entries()));
 
-    // Check for access_token in the callback parameters
-    const accessToken = searchParams.get("access_token");
-    const tokenType = searchParams.get("token_type") || "Bearer";
-    const expiresIn = searchParams.get("expires_in");
-    const userParam = searchParams.get("user");
+    // Check for access_token in query parameters
+    let accessToken = searchParams.get("access_token");
+    let tokenType = searchParams.get("token_type") || "Bearer";
+    let expiresIn = searchParams.get("expires_in");
+    let userParam = searchParams.get("user");
+
+    // If not in query params, check hash fragment (common in OAuth implicit flow)
+    if (!accessToken) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      accessToken = hashParams.get("access_token");
+      tokenType = hashParams.get("token_type") || "Bearer";
+      expiresIn = hashParams.get("expires_in");
+      userParam = hashParams.get("user");
+      console.log("Hash parameters found:", Object.fromEntries(hashParams.entries()));
+    }
     
     if (accessToken) {
       console.log("Access token received, storing in localStorage");
