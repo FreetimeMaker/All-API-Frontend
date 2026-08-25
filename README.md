@@ -4,7 +4,7 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
 
 ## Features
 
-- **OAuth Authentication**: Secure login via GitHub and GitLab
+- **OAuth Authentication**: Secure login via Supabase Auth
 - **Dashboard**: Account overview, statistics, and profile management
 - **Proxy API**: Seamless integration with backend services
 - **Health Monitoring**: Real-time health checks for API endpoints
