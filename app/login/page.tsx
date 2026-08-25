@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { createClient } from "@/lib/supabase/client";
 
 function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
   if (provider === "github") {
@@ -17,33 +18,35 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
 }
 
 export default function LoginPage() {
-  function redirectTo(provider: "github" | "gitlab") {
-    // Redirect directly to the API's OAuth login with our frontend callback as the 'next' parameter
-    // The API will handle the OAuth flow and redirect back with tokens in the hash fragment
-    const callbackUrl = `${window.location.origin}/auth/callback`;
-    const API_BASE = process.env.API_BASE || "https://all-api-node.vercel.app";
-    window.location.href = `${API_BASE}/api/v1/auth/login?provider=${provider}&next=${encodeURIComponent(callbackUrl)}`;
+  const supabase = createClient();
+
+  async function redirectTo(provider: "github" | "gitlab") {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error("Login error:", error.message);
+    }
   }
 
   return (
     <main className="flex items-center justify-center min-h-screen p-6 bg-slate-950">
       <div className="w-full max-w-md bg-slate-900 rounded-xl shadow-lg p-8 border border-slate-800">
         <h1 className="text-2xl font-semibold text-white">Sign In</h1>
-        <p className="mt-2 text-sm text-slate-400">Please sign in with GitHub or GitLab. Redirects are handled by the server.</p>
-
+        <p className="mt-2 text-sm text-slate-400">Please sign in with GitHub or GitLab.</p>
         <div className="mt-6 flex flex-col gap-3">
           <button onClick={() => redirectTo("github")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
             <ProviderIcon provider="github" />
             <span className="font-medium text-slate-200">Sign in with GitHub</span>
           </button>
-
           <button onClick={() => redirectTo("gitlab")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
             <ProviderIcon provider="gitlab" />
             <span className="font-medium text-slate-200">Sign in with GitLab</span>
           </button>
         </div>
-
-        <p className="mt-4 text-sm text-slate-500">Note: Before each API call, the server checks the Health API; if the API is unavailable, the request will be rejected.</p>
       </div>
     </main>
   );

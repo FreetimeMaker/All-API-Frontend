@@ -1,62 +1,27 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/dashboard/Sidebar";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import Sidebar from "../components/dashboard/Sidebar";
 import Spinner from "../components/Spinner";
+import type { User } from "@supabase/supabase-js";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    const AUTH_KEYS = ['access_token', 'auth_code', 'auth_token', 'token_type', 'token_expires_at', 'user_info'];
-
-    function clearAuth() {
-      AUTH_KEYS.forEach(k => localStorage.removeItem(k));
-    }
-
-    async function checkAuth() {
-      try {
-        const accessToken = localStorage.getItem('access_token');
-        const authCode = localStorage.getItem('auth_code');
-        const userToken = localStorage.getItem('auth_token');
-        const expiresAt = localStorage.getItem('token_expires_at');
-
-        if (expiresAt && Date.now() > Number(expiresAt)) {
-          clearAuth();
-          router.push("/login");
-          return;
-        }
-
-        const tokenToUse = accessToken || authCode || userToken;
-        if (!tokenToUse) {
-          router.push("/login");
-          return;
-        }
-
-        const res = await fetch("/api/session", {
-          headers: {
-            'Authorization': `Bearer ${tokenToUse}`,
-            'x-access-token': tokenToUse,
-          },
-        });
-        const data = await res.json();
-        if (data.loggedIn) {
-          setAuthenticated(true);
-        } else {
-          clearAuth();
-          router.push("/login");
-        }
-      } catch (error) {
-        clearAuth();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
         router.push("/login");
-      } finally {
-        setLoading(false);
+      } else {
+        setUser(user);
       }
-    }
-    checkAuth();
-  }, [router]);
+      setLoading(false);
+    });
+  }, [router, supabase]);
 
   if (loading) {
     return (
@@ -69,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  if (!authenticated) return null;
+  if (!user) return null;
 
   return (
     <div className="flex bg-slate-950 min-h-[calc(100vh-64px)]">
