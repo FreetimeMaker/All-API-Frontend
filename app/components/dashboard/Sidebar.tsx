@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,6 +12,14 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [apiUp, setApiUp] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then(r => r.json())
+      .then(d => setApiUp(d.ok === true))
+      .catch(() => setApiUp(false));
+  }, []);
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 min-h-[calc(100vh-64px)] hidden md:block">
@@ -39,8 +47,22 @@ export default function Sidebar() {
         <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
           <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">API Status</p>
           <div className="flex items-center gap-2 mt-1">
-            <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-sm text-slate-300">Operational</span>
+            {apiUp === null ? (
+              <>
+                <div className="h-2 w-2 rounded-full bg-slate-500 animate-pulse" />
+                <span className="text-sm text-slate-400">Checking...</span>
+              </>
+            ) : apiUp ? (
+              <>
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-sm text-slate-300">Operational</span>
+              </>
+            ) : (
+              <>
+                <div className="h-2 w-2 rounded-full bg-red-500" />
+                <span className="text-sm text-red-400">Down</span>
+              </>
+            )}
           </div>
         </div>
       </div>
