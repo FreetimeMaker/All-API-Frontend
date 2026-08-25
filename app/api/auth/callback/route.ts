@@ -75,17 +75,17 @@ export async function GET(req: NextRequest) {
       } else {
         const errorText = await tokenResponse.text().catch(() => "Unknown error");
         console.error("Token exchange failed:", errorText);
-        return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent("Token-Austausch fehlgeschlagen.")}`, req.url));
+        return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent("Token exchange failed.")}`, req.url));
       }
     } catch (e: any) {
       clearTimeout(timeoutId);
       console.error("Error exchanging code for tokens:", e);
-      const message = e.name === 'AbortError' ? "Zeitüberschreitung beim Token-Austausch." : "Fehler beim Token-Austausch.";
+      const message = e.name === 'AbortError' ? "Timeout during token exchange." : "Error during token exchange.";
       return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(message)}`, req.url));
     }
   }
   
   // Fallback: redirect to login with error if no tokens could be exchanged
   console.log("Insufficient parameters for token exchange, redirecting to login");
-  return NextResponse.redirect(new URL("/login?error=" + encodeURIComponent("Ungültige Callback-Parameter."), req.url), 302);
+  return NextResponse.redirect(new URL("/login?error=" + encodeURIComponent("Invalid callback parameters."), req.url), 302);
 }

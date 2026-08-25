@@ -23,6 +23,16 @@ export async function GET(req: NextRequest) {
       headers["authorization"] = `Bearer ${accessToken}`;
     }
     
+    // If no auth headers, we should return false for logged in
+    // The client-side should handle localStorage tokens
+    if (!authHeader && !accessToken) {
+      console.log("Session check - no auth headers provided, returning not logged in");
+      return new Response(JSON.stringify({ loggedIn: false }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    
     const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
       method: "GET",
       headers,

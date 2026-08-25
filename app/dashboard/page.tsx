@@ -140,17 +140,17 @@ export default function DashboardPage() {
   }
 
   const accountStats = [
-    { title: "Konto-Status", value: "Aktiv", change: "Verifiziert", icon: "🛡️" },
-    { title: "Letzter Login", value: "Heute", change: "Vor 2h", icon: "🕒" },
-    { title: "Sicherheit", value: "Hoch", change: "90%", icon: "🔐" },
-    { title: "Verknüpfte Dienste", value: "GitHub", change: "1 Aktiv", icon: "🔗" },
+    { title: "Account Status", value: "Active", change: "Verified", icon: "🛡️" },
+    { title: "Last Login", value: "Today", change: "2h ago", icon: "🕒" },
+    { title: "Security", value: "High", change: "90%", icon: "🔐" },
+    { title: "Connected Services", value: "GitHub", change: "1 Active", icon: "🔗" },
   ];
 
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-900 to-slate-950 min-h-screen p-6">
       <header className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-slate-100">Konto-Übersicht</h1>
-        <p className="text-slate-400">Willkommen, {user?.name || user?.username || "Benutzer"}. Verwalte hier deine persönlichen Kontodetails und Einstellungen.</p>
+        <h1 className="text-2xl font-bold text-slate-100">Account Overview</h1>
+        <p className="text-slate-400">Welcome, {user?.name || user?.username || "User"}. Manage your personal account details and settings here.</p>
       </header>
 
       {/* Account Stats Grid */}
@@ -175,8 +175,8 @@ export default function DashboardPage() {
         {/* Account Activity */}
         <div className="lg:col-span-2 bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
           <div className="p-4 border-b border-slate-700 flex justify-between items-center">
-            <h2 className="font-semibold text-slate-100">Konto-Aktivität</h2>
-            <button className="text-xs text-indigo-400 hover:underline">Alle anzeigen</button>
+            <h2 className="font-semibold text-slate-100">Account Activity</h2>
+            <button className="text-xs text-indigo-400 hover:underline">View All</button>
           </div>
           <div className="p-4">
             <ul className="space-y-4">
@@ -185,30 +185,30 @@ export default function DashboardPage() {
                   LG
                 </div>
                 <div className="flex-1">
-                  <p className="text-slate-100 font-medium">Erfolgreicher Login</p>
-                  <p className="text-slate-400 text-xs">Chrome auf macOS • Berlin, DE</p>
+                  <p className="text-slate-100 font-medium">Successful Login</p>
+                  <p className="text-slate-400 text-xs">Chrome on macOS • Berlin, DE</p>
                 </div>
-                <span className="text-xs text-slate-500">Vor 2 Stunden</span>
+                <span className="text-xs text-slate-500">2 hours ago</span>
               </li>
               <li className="flex items-center gap-4 text-sm">
                 <div className="h-8 w-8 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-400 text-xs font-bold">
                   PR
                 </div>
                 <div className="flex-1">
-                  <p className="text-slate-100 font-medium">Profilbild aktualisiert</p>
-                  <p className="text-slate-400 text-xs">Synchronisiert von GitHub</p>
+                  <p className="text-slate-100 font-medium">Profile picture updated</p>
+                  <p className="text-slate-400 text-xs">Synced from GitHub</p>
                 </div>
-                <span className="text-xs text-slate-500">Gestern, 18:45</span>
+                <span className="text-xs text-slate-500">Yesterday, 18:45</span>
               </li>
               <li className="flex items-center gap-4 text-sm">
                 <div className="h-8 w-8 rounded-full bg-amber-900/50 flex items-center justify-center text-amber-400 text-xs font-bold">
                   SC
                 </div>
                 <div className="flex-1">
-                  <p className="text-slate-100 font-medium">Sicherheits-Check durchgeführt</p>
-                  <p className="text-slate-400 text-xs">Keine verdächtigen Aktivitäten gefunden</p>
+                  <p className="text-slate-100 font-medium">Security check performed</p>
+                  <p className="text-slate-400 text-xs">No suspicious activity found</p>
                 </div>
-                <span className="text-xs text-slate-500">14. Aug 2026</span>
+                <span className="text-xs text-slate-500">Aug 14, 2026</span>
               </li>
             </ul>
           </div>
@@ -217,21 +217,21 @@ export default function DashboardPage() {
         {/* Account Shortcuts */}
         <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
           <div className="p-4 border-b border-slate-700">
-            <h2 className="font-semibold text-slate-100">Konto-Aktionen</h2>
+            <h2 className="font-semibold text-slate-100">Account Actions</h2>
           </div>
           <div className="p-4 flex flex-col gap-2">
             <a href="/dashboard/profile" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">
-              👤 Profil bearbeiten
+              👤 Edit Profile
             </a>
             <button className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">
-              🔒 Passwort ändern
+              🔒 Change Password
             </button>
             <button className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">
-              📧 E-Mail Einstellungen
+              📧 Email Settings
             </button>
             <div className="mt-2 pt-2 border-t border-slate-700">
               <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-red-900/50 text-red-400 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors">
-                🚪 Abmelden
+                🚪 Sign Out
               </button>
             </div>
           </div>

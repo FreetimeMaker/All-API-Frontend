@@ -69,7 +69,7 @@ function AuthCallbackContent() {
     } else {
       // No token received - redirect back to login with error
       console.log("No access token received in callback");
-      router.push("/login?error=" + encodeURIComponent("Authentifizierung fehlgeschlagen: Kein Token empfangen."));
+      router.push("/login?error=" + encodeURIComponent("Authentication failed: No token received."));
     }
   }, [router, searchParams]);
 
@@ -100,12 +100,12 @@ function AuthCallbackContent() {
         router.push("/dashboard");
       } else {
         console.error("Failed to fetch user info:", response.status);
-        router.push("/login?error=" + encodeURIComponent("Benutzerinformationen konnten nicht geladen werden."));
+        router.push("/login?error=" + encodeURIComponent("User information could not be loaded."));
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
       console.error("Error fetching user info:", error);
-      const message = error.name === 'AbortError' ? "Zeitüberschreitung beim Laden der Benutzerdaten." : "Fehler beim Laden der Benutzerdaten.";
+      const message = error.name === 'AbortError' ? "Timeout while loading user data." : "Error loading user data.";
       router.push("/login?error=" + encodeURIComponent(message));
     }
   }
@@ -114,8 +114,8 @@ function AuthCallbackContent() {
     <div className="flex items-center justify-center min-h-screen bg-slate-950">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-        <p className="text-slate-300">Authentifizierung wird verarbeitet...</p>
-        <p className="text-slate-500 text-sm mt-2">Token werden abgerufen und gespeichert...</p>
+        <p className="text-slate-300">Authentication is being processed...</p>
+        <p className="text-slate-500 text-sm mt-2">Tokens are being retrieved and stored...</p>
       </div>
     </div>
   );

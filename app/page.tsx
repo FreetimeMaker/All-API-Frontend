@@ -39,7 +39,7 @@ export default function Home() {
           All API <span className="text-indigo-400">Frontend</span>
         </h1>
         <p className="text-lg text-slate-300 mb-10 max-w-lg leading-relaxed text-center">
-          Verwalte dein Benutzerkonto, überprüfe deine Sicherheitsstatistiken und behalte den Überblick über deine Profilaktivitäten – alles an einem zentralen Ort.
+          Manage your user account, check your security statistics, and keep track of your profile activities – all in one central place.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -47,7 +47,7 @@ export default function Home() {
             href="/login"
             className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all text-center"
           >
-            Jetzt loslegen
+            Get Started
           </Link>
           <Link
             href="/health"
@@ -60,15 +60,15 @@ export default function Home() {
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 w-full border-t border-slate-800 pt-10">
           <div className="text-center sm:text-left">
             <h3 className="font-bold text-white mb-2 text-lg">OAuth Login</h3>
-            <p className="text-sm text-slate-400">Sichere Anmeldung über GitHub oder GitLab.</p>
+            <p className="text-sm text-slate-400">Secure sign-in via GitHub or GitLab.</p>
           </div>
           <div className="text-center sm:text-left">
             <h3 className="font-bold text-white mb-2 text-lg">Proxy API</h3>
-            <p className="text-sm text-slate-400">Nahtlose Integration deiner Backend-Dienste.</p>
+            <p className="text-sm text-slate-400">Seamless integration of your backend services.</p>
           </div>
           <div className="text-center sm:text-left">
             <h3 className="font-bold text-white mb-2 text-lg">Live Monitor</h3>
-            <p className="text-sm text-slate-400">Echtzeit-Health-Checks für alle Endpunkte.</p>
+            <p className="text-sm text-slate-400">Real-time health checks for all endpoints.</p>
           </div>
         </div>
       </main>

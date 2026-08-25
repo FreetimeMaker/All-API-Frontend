@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { name: "Übersicht", href: "/dashboard", icon: "📊" },
-  { name: "Statistiken", href: "/dashboard/stats", icon: "📈" },
-  { name: "Profil", href: "/dashboard/profile", icon: "👤" },
-  { name: "Einstellungen", href: "/dashboard/settings", icon: "⚙️" },
+  { name: "Overview", href: "/dashboard", icon: "📊" },
+  { name: "Statistics", href: "/dashboard/stats", icon: "📈" },
+  { name: "Profile", href: "/dashboard/profile", icon: "👤" },
+  { name: "Settings", href: "/dashboard/settings", icon: "⚙️" },
 ];
 
 export default function Sidebar() {
@@ -40,7 +40,7 @@ export default function Sidebar() {
           <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">API Status</p>
           <div className="flex items-center gap-2 mt-1">
             <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-sm text-slate-300">Betriebsbereit</span>
+            <span className="text-sm text-slate-300">Operational</span>
           </div>
         </div>
       </div>
