@@ -18,10 +18,11 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
 
 export default function LoginPage() {
   function redirectTo(provider: "github" | "gitlab") {
-    // Redirect to the API's OAuth login, but specify our custom callback handler
-    // Our custom handler will intercept the response and extract tokens
-    const callbackUrl = `${window.location.origin}/api/auth/callback?provider=${provider}`;
-    window.location.href = `/api/proxy/api/v1/auth/login?provider=${provider}&next=${encodeURIComponent(callbackUrl)}`;
+    // Redirect directly to the API's OAuth login with our frontend callback as the 'next' parameter
+    // The API will handle the OAuth flow and redirect back with tokens in the hash fragment
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const API_BASE = process.env.API_BASE || "https://all-api-node.vercel.app";
+    window.location.href = `${API_BASE}/api/v1/auth/login?provider=${provider}&next=${encodeURIComponent(callbackUrl)}`;
   }
 
   return (

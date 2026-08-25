@@ -38,24 +38,24 @@ export default function LogoutPage() {
     }
   }
 
-  if (loading) return <main className="p-8">Checking session…</main>;
+  if (loading) return <main className="p-8 text-slate-300">Checking session…</main>;
 
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold">Logout</h1>
+      <h1 className="text-2xl font-bold text-slate-100">Logout</h1>
       {loggedIn ? (
         <div className="mt-4">
-          <p>Angemeldet als <strong>{user?.name ?? user?.username ?? "User"}</strong></p>
+          <p className="text-slate-300">Angemeldet als <strong className="text-slate-100">{user?.name ?? user?.username ?? "User"}</strong></p>
           <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded">Logout</button>
         </div>
       ) : (
         <div className="mt-4">
-          <p className="text-gray-600">Du bist nicht angemeldet.</p>
-          <a href="/login" className="mt-2 inline-block px-3 py-1 bg-blue-600 text-white rounded">Zur Anmeldung</a>
+          <p className="text-slate-400">Du bist nicht angemeldet.</p>
+          <a href="/login" className="mt-2 inline-block px-3 py-1 bg-indigo-600 text-white rounded">Zur Anmeldung</a>
         </div>
       )}
 
-      {message && <div className="mt-4 p-3 bg-gray-100 rounded">{message}</div>}
+      {message && <div className="mt-4 p-3 bg-slate-800 rounded text-slate-200">{message}</div>}
     </main>
   );
 }

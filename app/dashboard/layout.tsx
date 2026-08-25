@@ -30,10 +30,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex h-[80vh] items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-3">
           <Spinner />
-          <p className="text-gray-500 font-medium">Lade Dashboard...</p>
+          <p className="text-slate-400 font-medium">Lade Dashboard...</p>
         </div>
       </div>
     );
@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!authenticated) return null;
 
   return (
-    <div className="flex bg-gray-50 min-h-[calc(100vh-64px)]">
+    <div className="flex bg-slate-950 min-h-[calc(100vh-64px)]">
       <Sidebar />
       <main className="flex-1 p-6 overflow-auto">
         {children}

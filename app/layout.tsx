@@ -24,8 +24,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <header className="w-full bg-white/70 border-b py-3 px-6">
+      <body className="min-h-full flex flex-col bg-slate-950">
+        <header className="w-full bg-slate-900 border-b border-slate-800 py-3 px-6">
           <AuthNav />
         </header>
         <main className="flex-1">{children}</main>
