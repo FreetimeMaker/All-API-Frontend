@@ -15,26 +15,55 @@ interface Subscription {
   country: string;
 }
 
+const plans = [
+  {
+    id: "free",
+    name: "Free",
+    price: 0,
+    currency: "USD",
+    interval: "month",
+    features: ["1 city", "Daily forecast", "Basic alerts", "Community support"],
+    color: "slate",
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: 4.99,
+    currency: "USD",
+    interval: "month",
+    features: ["10 cities", "Hourly forecast", "Severe weather alerts", "Email support", "Historical data"],
+    color: "indigo",
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: 19.99,
+    currency: "USD",
+    interval: "month",
+    features: ["Unlimited cities", "Real-time updates", "Custom alerts", "Priority support", "API access", "White-label"],
+    color: "amber",
+  },
+];
+
 export default function SubscriptionsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [subscribing, setSubscribing] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<number | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => {
       setUser(user);
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      fetchSubscriptions(user);
+      if (user) fetchSubscriptions();
+      else setLoading(false);
     });
   }, [supabase]);
 
-  async function fetchSubscriptions(currentUser: User) {
+  async function fetchSubscriptions() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -43,22 +72,58 @@ export default function SubscriptionsPage() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      if (res.status === 401) {
+      if (res.ok) {
+        const data = await res.json();
+        setSubscriptions(Array.isArray(data) ? data : data.subscriptions || []);
+        setError(null);
+      } else if (res.status === 401) {
         setError("Authentication required. Please sign in again.");
-        setLoading(false);
-        return;
+      } else {
+        setError("Failed to load subscriptions.");
       }
-
-      const data = await res.json();
-      setSubscriptions(Array.isArray(data) ? data : data.subscriptions || []);
     } catch {
       setError("Failed to load subscriptions.");
     }
     setLoading(false);
   }
 
+  async function handleSubscribe(planId: string) {
+    if (!user) return;
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    setSubscribing(planId);
+    setSuccess(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch("/api/proxy/api/v1/geoweather/subscriptions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ plan: planId }),
+      });
+
+      if (res.ok) {
+        setSuccess(`Subscribed to ${plan.name} plan!`);
+        fetchSubscriptions();
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.message || "Failed to subscribe.");
+      }
+    } catch {
+      alert("Failed to subscribe.");
+    }
+    setSubscribing(null);
+    setTimeout(() => setSuccess(null), 3000);
+  }
+
   async function handleCancel(sub: Subscription) {
-    if (!confirm(`Cancel ${sub.plan} subscription for ${sub.city}?`)) return;
+    if (!confirm(`Cancel your ${sub.plan} subscription?`)) return;
     setCancelling(sub.id);
 
     try {
@@ -72,6 +137,7 @@ export default function SubscriptionsPage() {
 
       if (res.ok) {
         setSubscriptions(prev => prev.filter(s => s.id !== sub.id));
+        setSuccess("Subscription cancelled.");
       } else {
         const err = await res.json().catch(() => null);
         alert(err?.message || "Failed to cancel subscription.");
@@ -80,6 +146,11 @@ export default function SubscriptionsPage() {
       alert("Failed to cancel subscription.");
     }
     setCancelling(null);
+    setTimeout(() => setSuccess(null), 3000);
+  }
+
+  function isSubscribed(planId: string) {
+    return subscriptions.some(s => s.plan === planId && s.status === "active");
   }
 
   if (loading) {
@@ -94,11 +165,17 @@ export default function SubscriptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-bold text-slate-100">GeoWeather Subscriptions</h1>
-        <p className="text-slate-400">Manage your weather subscriptions. Cancel anytime.</p>
+        <p className="text-slate-400">Choose a plan and manage your weather subscriptions.</p>
       </header>
+
+      {success && (
+        <div className="bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 px-4 py-3 rounded-lg text-sm font-medium">
+          {success}
+        </div>
+      )}
 
       {error && (
         <div className="bg-amber-950/60 border border-amber-800/50 text-amber-300 px-4 py-3 rounded-lg text-sm">
@@ -106,64 +183,93 @@ export default function SubscriptionsPage() {
         </div>
       )}
 
-      {!error && subscriptions.length === 0 && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
-          <span className="text-4xl mb-4 block">🌤️</span>
-          <p className="text-slate-300 font-medium">No subscriptions yet</p>
-          <p className="text-sm text-slate-500 mt-1">Subscribe to weather alerts for your favorite cities.</p>
+      <div>
+        <h2 className="text-lg font-semibold text-slate-100 mb-4">Available Plans</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plans.map((plan) => {
+            const subscribed = isSubscribed(plan.id);
+            return (
+              <div key={plan.id} className={`bg-slate-800 rounded-xl border shadow-sm p-6 flex flex-col ${
+                subscribed ? "border-emerald-700" : "border-slate-700"
+              }`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-100">{plan.name}</h3>
+                  {subscribed && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-800">Active</span>
+                  )}
+                </div>
+                <div className="mb-6">
+                  <span className="text-3xl font-bold text-slate-100">
+                    {plan.price === 0 ? "Free" : `$${plan.price}`}
+                  </span>
+                  {plan.price > 0 && (
+                    <span className="text-sm text-slate-500">/{plan.interval}</span>
+                  )}
+                </div>
+                <ul className="space-y-2 mb-6 flex-1">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-slate-300">
+                      <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                {subscribed ? (
+                  <button
+                    disabled
+                    className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default"
+                  >
+                    Current Plan
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={subscribing === plan.id || plan.id === "free"}
+                    className="w-full py-2.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                  >
+                    {subscribing === plan.id ? "Subscribing..." : plan.id === "free" ? "Included" : "Subscribe"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {subscriptions.length > 0 && (
-        <div className="space-y-4">
-          {subscriptions.map((sub) => (
-            <div key={sub.id} className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">Your Active Subscriptions</h2>
+          <div className="space-y-3">
+            {subscriptions.map((sub) => (
+              <div key={sub.id} className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-100">{sub.plan}</h3>
+                    <h3 className="font-semibold text-slate-100 capitalize">{sub.plan}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       sub.status === "active"
                         ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800"
                         : "bg-slate-700 text-slate-400 border border-slate-600"
-                    }`}>
-                      {sub.status}
-                    </span>
+                    }`}>{sub.status}</span>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                    <div>
-                      <p className="text-slate-500 text-xs">City</p>
-                      <p className="text-slate-200">{sub.city}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-xs">Country</p>
-                      <p className="text-slate-200">{sub.country}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-xs">Price</p>
-                      <p className="text-slate-200">${sub.price} {sub.currency}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-xs">Next Billing</p>
-                      <p className="text-slate-200">{sub.nextBilling ? new Date(sub.nextBilling).toLocaleDateString() : "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500">
-                    Subscribed since {new Date(sub.startDate).toLocaleDateString()}
+                  <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400">
+                    {sub.city && <span>City: {sub.city}</span>}
+                    {sub.country && <span>{sub.country}</span>}
+                    <span>${sub.price} {sub.currency}</span>
+                    {sub.nextBilling && <span>Next billing: {new Date(sub.nextBilling).toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <div className="flex-shrink-0">
-                  <button
-                    onClick={() => handleCancel(sub)}
-                    disabled={cancelling === sub.id}
-                    className="px-4 py-2 text-sm font-medium rounded-lg border border-red-800 text-red-400 hover:bg-red-900/50 transition-colors disabled:opacity-50"
-                  >
-                    {cancelling === sub.id ? "Cancelling..." : "Cancel Subscription"}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleCancel(sub)}
+                  disabled={cancelling === sub.id}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-red-800 text-red-400 hover:bg-red-900/50 transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  {cancelling === sub.id ? "Cancelling..." : "Cancel"}
+                </button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
