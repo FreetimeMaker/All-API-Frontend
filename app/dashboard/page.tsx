@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
   const [products, setProducts] = useState<ProductsData | null>(null);
+  const [subCount, setSubCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -45,6 +46,19 @@ export default function DashboardPage() {
         setUser(authRes.data.user);
         setHealth(healthRes);
         setProducts(productsRes);
+
+        supabase.auth.getSession().then(({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
+          const token = session?.access_token;
+          fetch("/api/proxy/api/v1/geoweather/subscriptions", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+              const subs = Array.isArray(data) ? data : data.subscriptions || [];
+              setSubCount(subs.length);
+            })
+            .catch(() => {});
+        });
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -72,6 +86,13 @@ export default function DashboardPage() {
       color: health?.ok ? "emerald" : "red",
     },
     {
+      title: "Subscriptions",
+      value: subCount.toString(),
+      change: subCount > 0 ? "Active" : "None",
+      icon: "🌤️",
+      color: "cyan",
+    },
+    {
       title: "My Purchases",
       value: purchases.length.toString(),
       change: purchases.length > 0 ? "Active" : "None",
@@ -84,13 +105,6 @@ export default function DashboardPage() {
       change: products?.count ? `${products.count} Available` : "None",
       icon: "🛒",
       color: "amber",
-    },
-    {
-      title: "Account Age",
-      value: `${accountAge}d`,
-      change: "Since signup",
-      icon: "🕒",
-      color: "sky",
     },
   ];
 
@@ -165,6 +179,7 @@ export default function DashboardPage() {
           <div className="p-4 flex flex-col gap-2">
             <a href="/dashboard/shop" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">🛒 Shop</a>
             <a href="/dashboard/purchases" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">📦 My Purchases</a>
+            <a href="/dashboard/subscriptions" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">🌤️ Subscriptions</a>
             <a href="/dashboard/profile" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">👤 Edit Profile</a>
             <a href="/dashboard/settings" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">⚙️ Settings</a>
             <a href="/health" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">💓 System Status</a>
