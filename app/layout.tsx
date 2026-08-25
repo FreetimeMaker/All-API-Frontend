@@ -29,6 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AuthNav />
         </header>
         <main className="flex-1">{children}</main>
+        <footer className="w-full bg-slate-900 border-t border-slate-800 py-4 px-6 text-center">
+          <p className="text-xs text-slate-500">&copy; 2026 Freetime Maker</p>
+        </footer>
       </body>
     </html>
   );
