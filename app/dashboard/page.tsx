@@ -7,6 +7,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
     // Check for user_info from OAuth callback
     const userInfo = localStorage.getItem('user_info');
     if (userInfo) {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         router.push("/login");
       })
       .finally(() => setLoading(false));
-  } [router];
+  }, [router]);
 
   // Also check on mount if localStorage might have been set earlier
   useEffect(() => {
