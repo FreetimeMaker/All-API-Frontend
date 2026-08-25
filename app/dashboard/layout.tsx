@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex h-[80vh] items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-3">
           <Spinner />
-          <p className="text-slate-400 font-medium">Lade Dashboard...</p>
+          <p className="text-slate-400 font-medium">Loading dashboard...</p>
         </div>
       </div>
     );

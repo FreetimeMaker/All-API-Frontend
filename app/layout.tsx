@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Freetime Maker",
-  description: "Verwalte alle Freetime Maker Produkte aus einem Konto.",
+  description: "Manage all Freetime Maker products from one account.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

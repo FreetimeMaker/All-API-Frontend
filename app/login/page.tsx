@@ -36,7 +36,7 @@ export default function LoginPage() {
     <main className="flex items-center justify-center min-h-screen p-6 bg-slate-950">
       <div className="w-full max-w-md bg-slate-900 rounded-xl shadow-lg p-8 border border-slate-800">
         <h1 className="text-2xl font-semibold text-white">Freetime Maker</h1>
-        <p className="mt-2 text-sm text-slate-400">Melde dich mit GitHub oder GitLab an, um alle Produkte zu verwalten.</p>
+        <p className="mt-2 text-sm text-slate-400">Sign in with GitHub or GitLab to manage all products.</p>
         <div className="mt-6 flex flex-col gap-3">
           <button onClick={() => redirectTo("github")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
             <ProviderIcon provider="github" />

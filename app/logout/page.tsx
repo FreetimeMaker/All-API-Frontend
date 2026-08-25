@@ -28,7 +28,7 @@ export default function LogoutPage() {
     <main className="p-8">
       <h1 className="text-2xl font-bold text-slate-100">Logout</h1>
       <div className="mt-4">
-        <p className="text-slate-300">Bist du sicher, dass du dich abmelden möchtest?</p>
+        <p className="text-slate-300">Are you sure you want to sign out?</p>
         <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Logout</button>
       </div>
     </main>

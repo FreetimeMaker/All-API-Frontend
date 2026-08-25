@@ -20,8 +20,8 @@ function HeroSection() {
           <span className="block">All API</span>
         </h1>
         <p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          Verwalte alle Freetime Maker Produkte aus einem einzigen Konto.
-          Melde dich an und habe Zugriff auf alle deine Services &mdash; alles an einem Ort.
+          Manage all Freetime Maker products from a single account.
+          Sign in and get access to all your services &mdash; everything in one place.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
           <Link
@@ -57,8 +57,8 @@ function FeaturesSection() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
         </svg>
       ),
-      title: "Ein Konto, alle Produkte",
-      description: "Melde dich einmal mit GitHub oder GitLab an und verwalte alle Freetime Maker Produkte aus einem einzigen Dashboard.",
+      title: "One Account, All Products",
+      description: "Sign in once with GitHub or GitLab and manage all Freetime Maker products from a single dashboard.",
     },
     {
       icon: (
@@ -66,8 +66,8 @@ function FeaturesSection() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" />
         </svg>
       ),
-      title: "Echtzeit-Status",
-      description: "Live-Healthchecks zeigen dir den aktuellen Status aller API-Dienste an. Du siehst sofort, ob alles läuft.",
+      title: "Real-Time Status",
+      description: "Live health checks show you the current status of all API services. See at a glance if everything is running.",
     },
     {
       icon: (
@@ -75,8 +75,8 @@ function FeaturesSection() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-16.5 0V6.75a3 3 0 013-3h9a3 3 0 013 3v2.594" />
         </svg>
       ),
-      title: "Dashboard & Profil",
-      description: "Verwalte dein Profil, siehe deine Aktivitäten und steuere alle verbundenen Freetime Maker Dienste.",
+      title: "Dashboard & Profile",
+      description: "Manage your profile, view your activity, and control all connected Freetime Maker services.",
     },
     {
       icon: (
@@ -84,17 +84,17 @@ function FeaturesSection() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
         </svg>
       ),
-      title: "Sicherer API-Zugang",
-      description: "Ein geschützter Proxy leitet alle Anfragen weiter. CORS, Header und Weiterleitungen werden automatisch verwaltet.",
+      title: "Secure API Access",
+      description: "A protected proxy forwards all requests. CORS, headers, and redirects are managed automatically.",
     },
   ];
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-20">
       <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-white">Alles was du brauchst</h2>
+        <h2 className="text-3xl font-bold text-white">Everything You Need</h2>
         <p className="mt-3 text-slate-400 max-w-xl mx-auto">
-          Ein zentrales Dashboard für alle Freetime Maker Produkte und Dienste.
+          A central dashboard for all Freetime Maker products and services.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -116,26 +116,26 @@ function HowItWorksSection() {
   const steps = [
     {
       step: "1",
-      title: "Anmelden",
-      description: "Klicke auf Anmelden und authentifiziere dich mit GitHub oder GitLab. Deine Sitzung wird sicher über Supabase Cookies verwaltet.",
+      title: "Sign In",
+      description: "Click Sign In and authenticate with GitHub or GitLab. Your session is securely managed via Supabase cookies.",
     },
     {
       step: "2",
-      title: "Dashboard öffnen",
-      description: "Nach der Anmeldung gelangst du zu deinem persönlichen Dashboard mit Übersicht, Aktivitäten und Schnellaktionen.",
+      title: "Open Dashboard",
+      description: "After signing in you'll land on your personal dashboard with an overview, activity feed, and quick actions.",
     },
     {
       step: "3",
-      title: "Produkte verwalten",
-      description: "Verwalte dein Profil, monitor den API-Status in Echtzeit und interagiere mit allen Freetime Maker Diensten.",
+      title: "Manage Products",
+      description: "Manage your profile, monitor API status in real time, and interact with all Freetime Maker services.",
     },
   ];
 
   return (
     <section className="max-w-5xl mx-auto px-6 py-20">
       <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-white">So funktioniert&apos;s</h2>
-        <p className="mt-3 text-slate-400">Drei einfache Schritte zum Start.</p>
+        <h2 className="text-3xl font-bold text-white">How It Works</h2>
+        <p className="mt-3 text-slate-400">Three simple steps to get started.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {steps.map((s, i) => (
@@ -165,7 +165,7 @@ function TechStackSection() {
   return (
     <section className="max-w-5xl mx-auto px-6 py-20">
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-white">Moderne Technik</h2>
+        <h2 className="text-3xl font-bold text-white">Modern Tech Stack</h2>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
         {techs.map((t, i) => (
@@ -185,9 +185,9 @@ function CTASection() {
       <div className="relative rounded-2xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-900 border border-indigo-800/30 p-12 text-center overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 blur-[80px] rounded-full" />
         <div className="relative">
-          <h2 className="text-3xl font-bold text-white">Bereit loszulegen?</h2>
+          <h2 className="text-3xl font-bold text-white">Ready to Get Started?</h2>
           <p className="mt-3 text-slate-400 max-w-md mx-auto">
-            Melde dich mit GitHub oder GitLab an und verwalte alle Freetime Maker Produkte aus einem Konto.
+            Sign in with GitHub or GitLab and manage all Freetime Maker products from one account.
           </p>
           <div className="mt-8">
             <Link
