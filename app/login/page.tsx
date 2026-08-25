@@ -2,7 +2,7 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/client";
 
-function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
+function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "modrinth" }) {
   if (provider === "github") {
     return (
       <svg width="18" height="18" viewBox="0 0 16 16" fill="#e2e8f0" aria-hidden>
@@ -10,9 +10,16 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
       </svg>
     );
   }
+  if (provider === "gitlab") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#e2e8f0" aria-hidden>
+        <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.84.84 0 0 1 5.39 1h13.22a.84.84 0 0 1 .8.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94zM12 20.13l8.5-6.07-1.08-3.33-7.42-5.32-7.42 5.32-1.08 3.33z" />
+      </svg>
+    );
+  }
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="#e2e8f0" aria-hidden>
-      <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.84.84 0 0 1 5.39 1h13.22a.84.84 0 0 1 .8.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94zM12 20.13l8.5-6.07-1.08-3.33-7.42-5.32-7.42 5.32-1.08 3.33z" />
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#e2e8f0" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -20,7 +27,7 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
 export default function LoginPage() {
   const supabase = createClient();
 
-  async function redirectTo(provider: "github" | "gitlab") {
+  async function redirectTo(provider: "github" | "gitlab" | "modrinth") {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -45,6 +52,10 @@ export default function LoginPage() {
           <button onClick={() => redirectTo("gitlab")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
             <ProviderIcon provider="gitlab" />
             <span className="font-medium text-slate-200">Sign in with GitLab</span>
+          </button>
+          <button onClick={() => redirectTo("modrinth")} className="flex items-center gap-3 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200">
+            <ProviderIcon provider="modrinth" />
+            <span className="font-medium text-slate-200">Sign in with Modrinth</span>
           </button>
         </div>
       </div>
