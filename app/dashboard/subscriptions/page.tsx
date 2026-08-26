@@ -8,7 +8,6 @@ interface Plan {
   name: string;
   price: number;
   currency: string;
-  interval: string;
   features: string[];
 }
 
@@ -23,10 +22,10 @@ interface Subscription {
 }
 
 const fallbackPlans: Plan[] = [
-  { id: "free", name: "Free", price: 0, currency: "USD", interval: "one-time", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
-  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "one-time", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
-  { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "one-time", features: ["Unlimited cities", "2000 Requests/Day"] },
-  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "one-time", features: ["Everything the App and Open-Meteo.com have to offer"]},
+  { id: "free", name: "Free", price: 0, currency: "USD", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
+  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
+  { id: "premium", name: "Premium", price: 9.99, currency: "USD", features: ["Unlimited cities", "2000 Requests/Day"] },
+  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", features: ["Everything the App and Open-Meteo.com have to offer"]},
 ];
 
 const planTier: Record<string, number> = { free: 0, freemium: 1, premium: 2, ultrimium: 3 };
@@ -190,9 +189,6 @@ export default function SubscriptionsPage() {
               <span className="text-3xl font-bold text-slate-100">
                 {plan.price === 0 ? "Free" : `$${plan.price}`}
               </span>
-              {plan.price > 0 && (
-                <span className="text-sm text-slate-500">/{plan.interval}</span>
-              )}
               {plan.price > 0 && (
                 <p className="text-xs text-slate-500 mt-1">Paid with Solana Pay</p>
               )}
