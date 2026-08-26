@@ -29,6 +29,8 @@ const fallbackPlans: Plan[] = [
   { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "month", features: ["Everything the App and Open-Meteo.com have to offer"]},
 ];
 
+const planTier: Record<string, number> = { free: 0, freemium: 1, premium: 2, ultrimium: 3 };
+
 export default function SubscriptionsPage() {
   const [plans, setPlans] = useState<Plan[]>(fallbackPlans);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -42,6 +44,15 @@ export default function SubscriptionsPage() {
   const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
   const [activePlan, setActivePlan] = useState<string | null>(null);
+
+  const currentTier = (() => {
+    const codeTier = activePlan ? (planTier[activePlan.toLowerCase()] ?? -1) : -1;
+    const subTier = subscriptions.reduce((max, sub) => {
+      const t = planTier[sub.plan.toLowerCase()] ?? -1;
+      return t > max ? t : max;
+    }, -1);
+    return Math.max(codeTier, subTier);
+  })();
 
   useEffect(() => {
     fetch("/api/proxy/api/v1/geoweather/subscriptions/plans")
@@ -199,19 +210,21 @@ export default function SubscriptionsPage() {
               </ul>
             )}
             <div className="mt-auto">
-              {plan.price === 0 ? (
-                activePlan ? (
-                  <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-emerald-900/50 text-emerald-300 border border-emerald-800 cursor-default flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    {activePlan} Plan
-                  </button>
-                ) : (
-                  <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default">
-                    Free Tier
-                  </button>
-                )
+              {plan.price === 0 && !activePlan ? (
+                <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default">
+                  Free Tier
+                </button>
+              ) : planTier[plan.id] !== undefined && planTier[plan.id] <= currentTier ? (
+                <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-emerald-900/50 text-emerald-300 border border-emerald-800 cursor-default flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  {planTier[plan.id] === currentTier ? "Current Plan" : "Included in your plan"}
+                </button>
+              ) : plan.price === 0 ? (
+                <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-700 text-slate-400 cursor-default">
+                  Free Tier
+                </button>
               ) : (
                 <button
                   onClick={() => handlePay(plan)}
