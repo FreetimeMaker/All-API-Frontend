@@ -23,10 +23,10 @@ interface Subscription {
 }
 
 const fallbackPlans: Plan[] = [
-  { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
-  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
-  { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "2000 Requests/Day"] },
-  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "month", features: ["Everything the App and Open-Meteo.com have to offer"]},
+  { id: "free", name: "Free", price: 0, currency: "USD", interval: "one-time", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
+  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "one-time", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
+  { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "one-time", features: ["Unlimited cities", "2000 Requests/Day"] },
+  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "one-time", features: ["Everything the App and Open-Meteo.com have to offer"]},
 ];
 
 const planTier: Record<string, number> = { free: 0, freemium: 1, premium: 2, ultrimium: 3 };
