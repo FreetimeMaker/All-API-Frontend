@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import SolanaPayModal from "@/app/components/dashboard/SolanaPayModal";
 
 interface Plan {
@@ -25,7 +26,7 @@ const fallbackPlans: Plan[] = [
   { id: "free", name: "Free", price: 0, currency: "USD", interval: "month", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
   { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", interval: "month", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
   { id: "premium", name: "Premium", price: 9.99, currency: "USD", interval: "month", features: ["Unlimited cities", "2000 Requests/Day"] },
-  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "month", features: ["Everything the App has to offer and Open-Meteo.com"]},
+  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", interval: "month", features: ["Everything the App and Open-Meteo.com have to offer"]},
 ];
 
 export default function SubscriptionsPage() {
@@ -36,6 +37,10 @@ export default function SubscriptionsPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [payingPlan, setPayingPlan] = useState<Plan | null>(null);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/proxy/api/v1/geoweather/subscriptions/plans")
@@ -79,6 +84,40 @@ export default function SubscriptionsPage() {
     setPayingPlan(null);
     setError(`Payment failed: ${msg}`);
     setTimeout(() => setError(null), 5000);
+  }
+
+  async function handleRedeem() {
+    const code = redeemCode.trim();
+    if (!code) return;
+
+    setRedeeming(true);
+    setRedeemSuccess(null);
+    setRedeemError(null);
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("redeem_code", { code });
+
+      if (error) {
+        setRedeemError(error.message || "Failed to redeem code.");
+        setTimeout(() => setRedeemError(null), 5000);
+        return;
+      }
+
+      if (data?.success) {
+        setRedeemSuccess(`Code redeemed! You now have access to the ${data.plan || "selected"} plan.`);
+        setRedeemCode("");
+        setTimeout(() => setRedeemSuccess(null), 8000);
+      } else {
+        setRedeemError(data?.error || "Invalid or already used code.");
+        setTimeout(() => setRedeemError(null), 5000);
+      }
+    } catch {
+      setRedeemError("An unexpected error occurred.");
+      setTimeout(() => setRedeemError(null), 5000);
+    } finally {
+      setRedeeming(false);
+    }
   }
 
   if (loading) {
@@ -160,6 +199,49 @@ export default function SubscriptionsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-slate-100 mb-1">Redeem Code</h2>
+        <p className="text-sm text-slate-400 mb-4">Have a promo or gift code? Enter it below to activate your subscription.</p>
+        {redeemSuccess && (
+          <div className="bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 px-4 py-3 rounded-lg text-sm font-medium mb-4">
+            {redeemSuccess}
+          </div>
+        )}
+        {redeemError && (
+          <div className="bg-amber-950/60 border border-amber-800/50 text-amber-300 px-4 py-3 rounded-lg text-sm mb-4">
+            {redeemError}
+          </div>
+        )}
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={redeemCode}
+            onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => { if (e.key === "Enter") handleRedeem(); }}
+            placeholder="Enter code"
+            disabled={redeeming}
+            className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 text-sm font-mono tracking-wider focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+          />
+          <button
+            onClick={handleRedeem}
+            disabled={redeeming || !redeemCode.trim()}
+            className="px-6 py-2.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {redeeming ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Redeeming...
+              </>
+            ) : (
+              "Redeem"
+            )}
+          </button>
+        </div>
       </div>
 
       {subscriptions.length > 0 && (
