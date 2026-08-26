@@ -242,6 +242,7 @@ export default function SubscriptionsPage() {
         ))}
       </div>
 
+      {currentTier < 3 && (
       <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-100 mb-1">Redeem Code</h2>
         <p className="text-sm text-slate-400 mb-4">Have a promo or gift code? Enter it below to activate your subscription.</p>
@@ -284,6 +285,7 @@ export default function SubscriptionsPage() {
           </button>
         </div>
       </div>
+      )}
 
       {subscriptions.length > 0 && (
         <div>
