@@ -263,7 +263,7 @@ export default function WalloraShopPage() {
             <h1 className="text-2xl font-bold text-white">All API Shop</h1>
             <p className="text-sm text-slate-400">GeoWeather subscriptions and premium wallpapers</p>
           </div>
-          {activeCategory === "wallpapers" ? (
+          {activeCategory === "wallpapers" && (
             <button
               onClick={() => setCartOpen(!cartOpen)}
               className="relative p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors"
@@ -277,13 +277,6 @@ export default function WalloraShopPage() {
                 </span>
               )}
             </button>
-          ) : (
-            <a
-              href="/dashboard/subscriptions"
-              className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
-            >
-              Manage Subscriptions &rarr;
-            </a>
           )}
         </div>
       </header>
