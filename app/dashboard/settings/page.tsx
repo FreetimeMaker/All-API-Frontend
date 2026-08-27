@@ -56,13 +56,6 @@ export default function SettingsPage() {
             </div>
             <span className="px-2 py-1 text-xs rounded bg-emerald-900/50 text-emerald-400 border border-emerald-800">Active</span>
           </div>
-          <div className="flex items-center justify-between py-2 border-t border-slate-700">
-            <div>
-              <p className="text-sm font-medium text-slate-200">Two-Factor Auth</p>
-              <p className="text-xs text-slate-400">Managed by your identity provider</p>
-            </div>
-            <span className="px-2 py-1 text-xs rounded bg-slate-700 text-slate-400 border border-slate-600">Provider-side</span>
-          </div>
         </div>
       </div>
 
