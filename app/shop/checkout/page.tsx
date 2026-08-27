@@ -12,6 +12,8 @@ interface CartItem {
   currency: string;
   category: string;
   image?: string;
+  resolution?: string;
+  format?: string;
   quantity: number;
 }
 
@@ -33,7 +35,7 @@ export default function CheckoutPage() {
       } else {
         setUser(user);
         // Load cart from localStorage
-        const savedCart = localStorage.getItem("wallora_cart");
+        const savedCart = localStorage.getItem("wallora_wallpaper_cart");
         if (savedCart) {
           const cartData = JSON.parse(savedCart);
           if (cartData.length === 0) {
@@ -63,7 +65,7 @@ export default function CheckoutPage() {
       const orderData = {
         userId: user.id,
         items: cart.map(item => ({
-          productId: item.id,
+          wallpaperId: item.id,
           quantity: item.quantity,
           price: item.price
         })),
@@ -86,7 +88,7 @@ export default function CheckoutPage() {
       const order = await response.json();
 
       // Clear cart
-      localStorage.removeItem("wallora_cart");
+      localStorage.removeItem("wallora_wallpaper_cart");
       setCart([]);
 
       // Update user metadata with purchase
@@ -165,7 +167,7 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="lg:col-span-2">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-6">Order Summary</h2>
+              <h2 className="text-xl font-semibold text-white mb-6">Wallpaper Order Summary</h2>
               
               <div className="space-y-4">
                 {cart.map((item) => (

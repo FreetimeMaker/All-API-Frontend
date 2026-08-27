@@ -15,13 +15,15 @@ interface HealthData {
   } | null;
 }
 
-interface Product {
+interface Wallpaper {
   id: number;
   name: string;
   description: string;
   price: number;
   currency: string;
   category: string;
+  resolution?: string;
+  format?: string;
 }
 
 interface Purchase {
@@ -39,7 +41,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
-  const [purchasedProducts, setPurchasedProducts] = useState<Product[]>([]);
+  const [purchasedWallpapers, setPurchasedWallpapers] = useState<Wallpaper[]>([]);
   const [redeemedCodes, setRedeemedCodes] = useState<RedeemedCode[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -49,8 +51,8 @@ export default function DashboardPage() {
     Promise.all([
       supabase.auth.getUser(),
       fetch("/api/health").then(r => r.json()),
-      fetch("/api/proxy/api/v1/fms/products").then(r => r.ok ? r.json() : null),
-    ]).then(([authRes, healthRes, productsRes]) => {
+      fetch("/api/proxy/api/v1/wallora/wallpapers").then(r => r.ok ? r.json() : null),
+    ]).then(([authRes, healthRes, wallpapersRes]) => {
       if (!authRes.data.user) {
         router.push("/login");
       } else {
@@ -58,12 +60,12 @@ export default function DashboardPage() {
         setHealth(healthRes);
 
         const purchases: Purchase[] = authRes.data.user.user_metadata?.purchases || [];
-        if (purchases.length > 0 && productsRes) {
-          const allProducts: Product[] = Array.isArray(productsRes) ? productsRes : productsRes.products || [];
-          const purchased = allProducts.filter((p: Product) =>
+        if (purchases.length > 0 && wallpapersRes) {
+          const allWallpapers: Wallpaper[] = Array.isArray(wallpapersRes) ? wallpapersRes : wallpapersRes.wallpapers || [];
+          const purchased = allWallpapers.filter((p: Wallpaper) =>
             purchases.some((pur: Purchase) => pur.productId === p.id)
           );
-          setPurchasedProducts(purchased);
+          setPurchasedWallpapers(purchased);
         }
 
         supabase
@@ -204,7 +206,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {(purchasedProducts.length > 0 || redeemedCodes.length > 0) && (
+      {(purchasedWallpapers.length > 0 || redeemedCodes.length > 0) && (
         <div className="max-w-6xl mx-auto space-y-4">
           {redeemedCodes.length > 0 && (
             <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
@@ -235,26 +237,38 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {purchasedProducts.length > 0 && (
+          {purchasedWallpapers.length > 0 && (
             <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
               <div className="p-4 border-b border-slate-700">
-                <h2 className="font-semibold text-slate-100">Purchased Products</h2>
+                <h2 className="font-semibold text-slate-100">Purchased Wallpapers</h2>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {purchasedProducts.map((product) => (
-                    <div key={product.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
+                  {purchasedWallpapers.map((wallpaper) => (
+                    <div key={wallpaper.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-slate-100 truncate">{product.name}</h3>
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{product.description}</p>
+                          <h3 className="text-sm font-semibold text-slate-100 truncate">{wallpaper.name}</h3>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{wallpaper.description}</p>
+                          <div className="flex gap-1 mt-1">
+                            {wallpaper.resolution && (
+                              <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
+                                {wallpaper.resolution}
+                              </span>
+                            )}
+                            {wallpaper.format && (
+                              <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
+                                {wallpaper.format}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-indigo-900/50 text-indigo-400 border border-indigo-800">
-                          {product.category}
+                          {wallpaper.category}
                         </span>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-100">${product.price} {product.currency}</span>
+                        <span className="text-sm font-bold text-slate-100">${wallpaper.price} {wallpaper.currency}</span>
                         <span className="text-[10px] text-indigo-400 font-medium">Purchased</span>
                       </div>
                     </div>

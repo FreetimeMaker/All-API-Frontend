@@ -12,6 +12,8 @@ interface WalloraProduct {
   currency: string;
   category: string;
   image?: string;
+  resolution?: string;
+  format?: string;
 }
 
 interface CartItem extends WalloraProduct {
@@ -34,23 +36,23 @@ export default function WalloraShopPage() {
         router.push("/login");
       } else {
         setUser(user);
-        // Load products from Wallora endpoint
-        fetch("/api/proxy/api/v1/wallora/products")
+        // Load wallpapers from Wallora endpoint
+        fetch("/api/proxy/api/v1/wallora/wallpapers")
           .then((res) => res.json())
           .then((data) => {
-            const productsData = Array.isArray(data) ? data : data.products || [];
+            const productsData = Array.isArray(data) ? data : data.wallpapers || [];
             setProducts(productsData);
             setLoading(false);
           })
           .catch((error) => {
-            console.error("Error loading Wallora products:", error);
+            console.error("Error loading Wallora wallpapers:", error);
             setLoading(false);
           });
       }
     });
 
     // Load cart from localStorage
-    const savedCart = localStorage.getItem("wallora_cart");
+    const savedCart = localStorage.getItem("wallora_wallpaper_cart");
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     }
@@ -58,7 +60,7 @@ export default function WalloraShopPage() {
 
   useEffect(() => {
     // Save cart to localStorage whenever it changes
-    localStorage.setItem("wallora_cart", JSON.stringify(cart));
+    localStorage.setItem("wallora_wallpaper_cart", JSON.stringify(cart));
   }, [cart]);
 
   const addToCart = (product: WalloraProduct) => {
@@ -121,8 +123,8 @@ export default function WalloraShopPage() {
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">Wallora Shop</h1>
-            <p className="text-sm text-slate-400">Premium products for your needs</p>
+            <h1 className="text-2xl font-bold text-white">Wallora Wallpaper Shop</h1>
+            <p className="text-sm text-slate-400">Premium wallpapers for your devices</p>
           </div>
           <button
             onClick={() => setCartOpen(!cartOpen)}
@@ -170,7 +172,19 @@ export default function WalloraShopPage() {
                     {product.category}
                   </span>
                 </div>
-                <p className="text-sm text-slate-400 mb-4 line-clamp-2">{product.description}</p>
+                <p className="text-sm text-slate-400 mb-2 line-clamp-2">{product.description}</p>
+                <div className="flex gap-2 mb-4">
+                  {product.resolution && (
+                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">
+                      {product.resolution}
+                    </span>
+                  )}
+                  {product.format && (
+                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">
+                      {product.format}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xl font-bold text-white">${product.price}</span>
@@ -190,7 +204,7 @@ export default function WalloraShopPage() {
 
         {products.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-slate-400">No products available at the moment.</p>
+            <p className="text-slate-400">No wallpapers available at the moment.</p>
           </div>
         )}
       </div>
@@ -222,7 +236,7 @@ export default function WalloraShopPage() {
                     <svg className="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     </svg>
-                    <p className="text-slate-400">Your cart is empty</p>
+                    <p className="text-slate-400">Your wallpaper cart is empty</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -247,6 +261,18 @@ export default function WalloraShopPage() {
                         <div className="flex-1">
                           <h4 className="font-medium text-white">{item.name}</h4>
                           <p className="text-sm text-slate-400">${item.price} {item.currency}</p>
+                          <div className="flex gap-1 mt-1">
+                            {item.resolution && (
+                              <span className="text-xs text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded">
+                                {item.resolution}
+                              </span>
+                            )}
+                            {item.format && (
+                              <span className="text-xs text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded">
+                                {item.format}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-2">
                             <button
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -262,7 +288,7 @@ export default function WalloraShopPage() {
                               +
                             </button>
                           </div>
-                          <p className="text-xs text-emerald-400 mt-1">Unlimited availability</p>
+                          <p className="text-xs text-emerald-400 mt-1">Digital download</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-white">
