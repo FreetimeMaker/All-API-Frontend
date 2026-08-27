@@ -146,9 +146,6 @@ export default function DashboardPage() {
                 <p className="text-xl font-bold text-slate-100">{currentPlan}</p>
               </div>
             </div>
-            <a href="/dashboard/subscriptions" className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-              Manage &rarr;
-            </a>
           </div>
         </div>
       )}
