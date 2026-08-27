@@ -445,6 +445,7 @@ export default function WalloraShopPage() {
                       <img
                         src={proxyImageUrl(product.image_url)}
                         alt={product.name}
+                        draggable={false}
                         onContextMenu={(e) => e.preventDefault()}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
