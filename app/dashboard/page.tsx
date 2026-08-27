@@ -29,12 +29,19 @@ interface Purchase {
   purchasedAt: string;
 }
 
+interface RedeemedCode {
+  id: number;
+  type: string;
+  used_at: string;
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
   const [subCount, setSubCount] = useState(0);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [purchasedProducts, setPurchasedProducts] = useState<Product[]>([]);
+  const [redeemedCodes, setRedeemedCodes] = useState<RedeemedCode[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -62,14 +69,17 @@ export default function DashboardPage() {
 
         supabase
           .from("geoweather_codes")
-          .select("type")
+          .select("id, type, used_at")
           .eq("used_by", authRes.data.user.id)
           .eq("is_used", true)
           .order("used_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(({ data }: { data: { type: string } | null }) => {
-            if (data?.type) setCurrentPlan(data.type);
+          .then(({ data, error }: { data: { id: number; type: string; used_at: string }[] | null; error: { message: string } | null }) => {
+            if (!error && data && data.length > 0) {
+              setRedeemedCodes(data as RedeemedCode[]);
+              if (!currentPlan && data.length > 0) {
+                setCurrentPlan(data[0].type);
+              }
+            }
           })
           .catch(() => {});
 
@@ -207,34 +217,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {purchasedProducts.length > 0 && (
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
-            <div className="p-4 border-b border-slate-700">
-              <h2 className="font-semibold text-slate-100">My Products</h2>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {purchasedProducts.map((product) => (
-                  <div key={product.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-slate-100 truncate">{product.name}</h3>
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">{product.description}</p>
+      {(purchasedProducts.length > 0 || redeemedCodes.length > 0) && (
+        <div className="max-w-6xl mx-auto space-y-4">
+          {redeemedCodes.length > 0 && (
+            <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
+              <div className="p-4 border-b border-slate-700">
+                <h2 className="font-semibold text-slate-100">Redeemed Codes</h2>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {redeemedCodes.map((code) => (
+                    <div key={code.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-slate-100 capitalize">{code.type}</h3>
+                          <p className="text-xs text-slate-400 mt-1">GeoWeather Subscription</p>
+                        </div>
+                        <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-900/50 text-emerald-400 border border-emerald-800">
+                          Active
+                        </span>
                       </div>
-                      <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-indigo-900/50 text-indigo-400 border border-indigo-800">
-                        {product.category}
-                      </span>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-slate-500">Redeemed {new Date(code.used_at).toLocaleDateString()}</span>
+                        <span className="text-[10px] text-emerald-400 font-medium">Code</span>
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-100">${product.price} {product.currency}</span>
-                      <span className="text-[10px] text-emerald-400 font-medium">Purchased</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {purchasedProducts.length > 0 && (
+            <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
+              <div className="p-4 border-b border-slate-700">
+                <h2 className="font-semibold text-slate-100">Purchased Products</h2>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {purchasedProducts.map((product) => (
+                    <div key={product.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-slate-100 truncate">{product.name}</h3>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{product.description}</p>
+                        </div>
+                        <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-indigo-900/50 text-indigo-400 border border-indigo-800">
+                          {product.category}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-100">${product.price} {product.currency}</span>
+                        <span className="text-[10px] text-indigo-400 font-medium">Purchased</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
