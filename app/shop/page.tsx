@@ -40,7 +40,12 @@ export default function WalloraShopPage() {
         fetch("/api/proxy/api/v1/wallora/wallpapers")
           .then((res) => res.json())
           .then((data) => {
+            console.log("Wallora wallpapers data:", data);
             const productsData = Array.isArray(data) ? data : data.wallpapers || [];
+            console.log("Parsed products:", productsData);
+            if (productsData.length > 0) {
+              console.log("First product structure:", productsData[0]);
+            }
             setProducts(productsData);
             setLoading(false);
           })
