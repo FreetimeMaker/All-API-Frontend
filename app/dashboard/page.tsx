@@ -38,7 +38,6 @@ interface RedeemedCode {
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [subCount, setSubCount] = useState(0);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [purchasedProducts, setPurchasedProducts] = useState<Product[]>([]);
   const [redeemedCodes, setRedeemedCodes] = useState<RedeemedCode[]>([]);
@@ -82,19 +81,6 @@ export default function DashboardPage() {
             }
           })
           .catch(() => {});
-
-        supabase.auth.getSession().then(({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
-          const token = session?.access_token;
-          fetch("/api/proxy/api/v1/geoweather/subscriptions", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          })
-            .then(r => r.ok ? r.json() : [])
-            .then(data => {
-              const subs = Array.isArray(data) ? data : data.subscriptions || [];
-              setSubCount(subs.length);
-            })
-            .catch(() => {});
-        });
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -118,9 +104,9 @@ export default function DashboardPage() {
       color: health?.ok ? "emerald" : "red",
     },
     {
-      title: "Subscriptions",
-      value: subCount.toString(),
-      change: subCount > 0 ? "Active" : "None",
+      title: "Current Plan",
+      value: currentPlan ? currentPlan : "Free",
+      change: currentPlan ? "Active" : "No plan",
       icon: "🌤️",
       color: "cyan",
     },
