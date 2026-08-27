@@ -1,4 +1,4 @@
-Frontend integriert die Endpoints der API https://all-api.vercel.app
+Frontend integriert die Endpoints der API https://all-api-node.vercel.app
 
 Aktuell nur:
 - /login -> OAuth via GitHub oder GitLab (Browser-Redirects zu /api/v1/auth/github oder /api/v1/auth/gitlab über die Proxy-Route)
