@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import SolanaPayModal from "../../components/dashboard/SolanaPayModal";
 import Spinner from "../../components/Spinner";
 
 interface CartItem {
@@ -23,6 +24,7 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -55,7 +57,7 @@ export default function CheckoutPage() {
     0
   );
 
-  const handlePlaceOrder = async () => {
+  const createOrder = async () => {
     setProcessing(true);
     setError(null);
 
@@ -127,6 +129,16 @@ export default function CheckoutPage() {
       setError(err instanceof Error ? err.message : "An error occurred");
       setProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPayModal(false);
+    createOrder();
+  };
+
+  const handlePaymentError = (msg: string) => {
+    setShowPayModal(false);
+    setError(`Payment failed: ${msg}`);
   };
 
   if (loading) {
@@ -246,20 +258,31 @@ export default function CheckoutPage() {
               )}
 
               <button
-                onClick={handlePlaceOrder}
-                disabled={processing}
-                className="w-full mt-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => { setError(null); setShowPayModal(true); }}
+                disabled={processing || cart.length === 0}
+                className="w-full mt-6 py-3 bg-[#9945FF] text-white rounded-lg hover:bg-[#8833EE] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {processing ? "Processing..." : "Place Order"}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2.5 5.5L8 2L13.5 5.5V10.5L8 14L2.5 10.5V5.5Z" fill="white" />
+                </svg>
+                {processing ? "Processing..." : `Pay $${cartTotal.toFixed(2)} with Solana`}
               </button>
 
-              <div className="mt-4 text-center text-sm text-slate-500">
-                <p>By placing this order, you agree to our Terms of Service</p>
-              </div>
+              <p className="mt-3 text-center text-xs text-slate-500">Your order is created after the Solana payment is confirmed.</p>
             </div>
           </div>
         </div>
       </div>
+
+      <SolanaPayModal
+        open={showPayModal}
+        amount={cartTotal}
+        label="Wallora Wallpapers"
+        message={`Purchase ${cart.length} wallpaper${cart.length === 1 ? "" : "s"}`}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+        onClose={() => setShowPayModal(false)}
+      />
     </div>
   );
 }
