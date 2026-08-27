@@ -19,19 +19,19 @@ export const metadata: Metadata = {
     default: "All API — Freetime Maker",
     template: "%s | All API",
   },
-  description: "Manage all Freetime Maker products, subscriptions and API access from one dashboard. Pay with Solana.",
+  description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
   metadataBase: new URL("https://all-api.vercel.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "All API",
     title: "All API — Freetime Maker",
-    description: "Manage all Freetime Maker products, subscriptions and API access from one dashboard. Pay with Solana.",
+    description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
   },
   twitter: {
     card: "summary_large_image",
     title: "All API — Freetime Maker",
-    description: "Manage all Freetime Maker products, subscriptions and API access from one dashboard. Pay with Solana.",
+    description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
   },
   robots: {
     index: true,

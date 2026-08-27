@@ -14,25 +14,9 @@ interface HealthData {
   } | null;
 }
 
-interface ProductsData {
-  count: number;
-  products: Array<{
-    id: number;
-    name: string;
-    description: string;
-    price: number;
-    currency: string;
-    stock: number;
-    category: string;
-    imageUrl: string;
-    createdAt: string;
-  }>;
-}
-
 export default function StatsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [products, setProducts] = useState<ProductsData | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -40,11 +24,9 @@ export default function StatsPage() {
     Promise.all([
       supabase.auth.getUser(),
       fetch("/api/health").then(r => r.json()),
-      fetch("/api/proxy/api/v1/fms/products").then(r => r.json()),
-    ]).then(([authRes, healthRes, productsRes]) => {
+    ]).then(([authRes, healthRes]) => {
       setUser(authRes.data.user);
       setHealth(healthRes);
-      setProducts(productsRes);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [supabase]);
@@ -79,12 +61,6 @@ export default function StatsPage() {
       color: "indigo",
     },
     {
-      title: "Products",
-      value: products?.count?.toString() || "0",
-      detail: products?.count ? products.products.map(p => p.name).join(", ") : "No products",
-      color: "amber",
-    },
-    {
       title: "Auth Provider",
       value: provider.charAt(0).toUpperCase() + provider.slice(1),
       detail: `Account age: ${accountAge} days`,
@@ -99,7 +75,7 @@ export default function StatsPage() {
         <p className="text-slate-400">Live data from the Freetime Maker API.</p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat, i) => (
           <div key={i} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm">
             <p className="text-sm font-medium text-slate-400">{stat.title}</p>
@@ -150,39 +126,6 @@ export default function StatsPage() {
         </div>
       )}
 
-      {products && products.count > 0 && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
-          <div className="p-4 border-b border-slate-700">
-            <h2 className="font-semibold text-slate-100">Freetime Maker Shop Products</h2>
-          </div>
-          <div className="p-4">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-2 text-slate-400 font-medium">Name</th>
-                    <th className="text-left py-2 text-slate-400 font-medium">Category</th>
-                    <th className="text-right py-2 text-slate-400 font-medium">Price</th>
-                    <th className="text-right py-2 text-slate-400 font-medium">Stock</th>
-                    <th className="text-left py-2 text-slate-400 font-medium">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.products.map((p) => (
-                    <tr key={p.id} className="border-b border-slate-700/50">
-                      <td className="py-3 text-slate-100 font-medium">{p.name}</td>
-                      <td className="py-3 text-slate-300">{p.category}</td>
-                      <td className="py-3 text-slate-300 text-right">${p.price} {p.currency}</td>
-                      <td className="py-3 text-slate-300 text-right">{p.stock.toLocaleString()}</td>
-                      <td className="py-3 text-slate-400">{new Date(p.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

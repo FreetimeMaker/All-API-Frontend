@@ -15,20 +15,9 @@ interface HealthData {
   } | null;
 }
 
-interface ProductsData {
-  count: number;
-  products: Array<{ id: number; name: string; price: number; currency: string; stock: number }>;
-}
-
-interface Purchase {
-  productId: number;
-  purchasedAt: string;
-}
-
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [products, setProducts] = useState<ProductsData | null>(null);
   const [subCount, setSubCount] = useState(0);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,14 +28,12 @@ export default function DashboardPage() {
     Promise.all([
       supabase.auth.getUser(),
       fetch("/api/health").then(r => r.json()),
-      fetch("/api/proxy/api/v1/fms/products").then(r => r.json()),
-    ]).then(([authRes, healthRes, productsRes]) => {
+    ]).then(([authRes, healthRes]) => {
       if (!authRes.data.user) {
         router.push("/login");
       } else {
         setUser(authRes.data.user);
         setHealth(healthRes);
-        setProducts(productsRes);
 
         supabase
           .from("geoweather_codes")
@@ -86,10 +73,6 @@ export default function DashboardPage() {
 
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "User";
   const provider = user.app_metadata?.provider || "unknown";
-  const accountAge = user.created_at
-    ? Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-  const purchases: Purchase[] = user.user_metadata?.purchases || [];
 
   const accountStats = [
     {
@@ -105,20 +88,6 @@ export default function DashboardPage() {
       change: subCount > 0 ? "Active" : "None",
       icon: "🌤️",
       color: "cyan",
-    },
-    {
-      title: "My Purchases",
-      value: purchases.length.toString(),
-      change: purchases.length > 0 ? "Active" : "None",
-      icon: "📦",
-      color: "indigo",
-    },
-    {
-      title: "Shop Products",
-      value: products?.count?.toString() || "0",
-      change: products?.count ? `${products.count} Available` : "None",
-      icon: "🛒",
-      color: "amber",
     },
   ];
 
@@ -150,7 +119,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-6xl mx-auto">
         {accountStats.map((stat, i) => (
           <div key={i} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start">
@@ -193,16 +162,6 @@ export default function DashboardPage() {
                   </span>
                 </li>
               )}
-              {products && products.count > 0 && (
-                <li className="flex items-center gap-4 text-sm">
-                  <div className="h-8 w-8 rounded-full bg-amber-900/50 flex items-center justify-center text-amber-400 text-xs font-bold">SH</div>
-                  <div className="flex-1">
-                    <p className="text-slate-100 font-medium">Shop Products</p>
-                    <p className="text-slate-400 text-xs">{products.count} product{products.count !== 1 ? "s" : ""} available</p>
-                  </div>
-                  <span className="text-xs text-slate-500">FMS</span>
-                </li>
-              )}
             </ul>
           </div>
         </div>
@@ -212,8 +171,6 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-slate-100">Quick Actions</h2>
           </div>
           <div className="p-4 flex flex-col gap-2">
-            <a href="/dashboard/shop" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">🛒 Shop</a>
-            <a href="/dashboard/purchases" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">📦 My Purchases</a>
             <a href="/dashboard/subscriptions" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">🌤️ Subscriptions</a>
             <a href="/dashboard/profile" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">👤 Edit Profile</a>
             <a href="/dashboard/settings" className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-2 transition-colors text-slate-300">⚙️ Settings</a>
