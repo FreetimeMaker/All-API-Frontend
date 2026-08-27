@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import type { User } from "@supabase/supabase-js";
 
 interface HealthData {
@@ -259,7 +260,7 @@ export default function DashboardPage() {
                       <div className="flex gap-3">
                         {wallpaper.image_url && (
                           <img
-                            src={wallpaper.image_url}
+                            src={proxyImageUrl(wallpaper.image_url)}
                             alt={wallpaper.name}
                             className="w-16 h-16 object-cover rounded"
                           />

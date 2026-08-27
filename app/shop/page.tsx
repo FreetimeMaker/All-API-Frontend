@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import Spinner from "../components/Spinner";
 
 interface WalloraProduct {
@@ -192,7 +193,7 @@ export default function WalloraShopPage() {
               {product.image_url ? (
                 <div className="aspect-video bg-slate-800 relative overflow-hidden">
                   <img
-                    src={product.image_url}
+                    src={proxyImageUrl(product.image_url)}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -283,7 +284,7 @@ export default function WalloraShopPage() {
                       >
                         {item.image_url ? (
                           <img
-                            src={item.image_url}
+                            src={proxyImageUrl(item.image_url)}
                             alt={item.name}
                             className="w-20 h-20 object-cover rounded"
                           />

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { proxyImageUrl } from "@/lib/proxy-image";
 import Spinner from "../../components/Spinner";
 
 interface CartItem {
@@ -187,7 +188,7 @@ export default function CheckoutPage() {
                   >
                     {item.image_url ? (
                       <img
-                        src={item.image_url}
+                        src={proxyImageUrl(item.image_url)}
                         alt={item.name}
                         className="w-24 h-24 object-cover rounded"
                       />
