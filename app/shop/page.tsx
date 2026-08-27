@@ -5,15 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import Spinner from "../components/Spinner";
 
 interface WalloraProduct {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  price: number;
-  currency: string;
+  cost: number;
+  currency?: string;
   category: string;
-  image?: string;
-  resolution?: string;
-  format?: string;
+  image_url: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
 }
 
 interface CartItem extends WalloraProduct {
@@ -40,12 +41,7 @@ export default function WalloraShopPage() {
         fetch("/api/proxy/api/v1/wallora/wallpapers")
           .then((res) => res.json())
           .then((data) => {
-            console.log("Wallora wallpapers data:", data);
             const productsData = Array.isArray(data) ? data : data.wallpapers || [];
-            console.log("Parsed products:", productsData);
-            if (productsData.length > 0) {
-              console.log("First product structure:", productsData[0]);
-            }
             setProducts(productsData);
             setLoading(false);
           })
@@ -82,11 +78,11 @@ export default function WalloraShopPage() {
     });
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
     } else {
@@ -99,7 +95,7 @@ export default function WalloraShopPage() {
   };
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + item.cost * item.quantity,
     0
   );
 
@@ -155,10 +151,10 @@ export default function WalloraShopPage() {
               key={product.id}
               className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-all group"
             >
-              {product.image ? (
+              {product.image_url ? (
                 <div className="aspect-video bg-slate-800 relative overflow-hidden">
                   <img
-                    src={product.image}
+                    src={product.image_url}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -177,23 +173,11 @@ export default function WalloraShopPage() {
                     {product.category}
                   </span>
                 </div>
-                <p className="text-sm text-slate-400 mb-2 line-clamp-2">{product.description}</p>
-                <div className="flex gap-2 mb-4">
-                  {product.resolution && (
-                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">
-                      {product.resolution}
-                    </span>
-                  )}
-                  {product.format && (
-                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">
-                      {product.format}
-                    </span>
-                  )}
-                </div>
+                <p className="text-sm text-slate-400 mb-4 line-clamp-2">{product.description}</p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xl font-bold text-white">${product.price}</span>
-                    <span className="text-sm text-slate-400 ml-1">{product.currency}</span>
+                    <span className="text-xl font-bold text-white">${product.cost}</span>
+                    <span className="text-sm text-slate-400 ml-1">{product.currency || "USD"}</span>
                   </div>
                   <button
                     onClick={() => addToCart(product)}
@@ -250,9 +234,9 @@ export default function WalloraShopPage() {
                         key={item.id}
                         className="flex gap-4 p-3 bg-slate-800 rounded-lg border border-slate-700"
                       >
-                        {item.image ? (
+                        {item.image_url ? (
                           <img
-                            src={item.image}
+                            src={item.image_url}
                             alt={item.name}
                             className="w-20 h-20 object-cover rounded"
                           />
@@ -265,19 +249,7 @@ export default function WalloraShopPage() {
                         )}
                         <div className="flex-1">
                           <h4 className="font-medium text-white">{item.name}</h4>
-                          <p className="text-sm text-slate-400">${item.price} {item.currency}</p>
-                          <div className="flex gap-1 mt-1">
-                            {item.resolution && (
-                              <span className="text-xs text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded">
-                                {item.resolution}
-                              </span>
-                            )}
-                            {item.format && (
-                              <span className="text-xs text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded">
-                                {item.format}
-                              </span>
-                            )}
-                          </div>
+                          <p className="text-sm text-slate-400">${item.cost} {item.currency || "USD"}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <button
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -297,7 +269,7 @@ export default function WalloraShopPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-white">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ${(item.cost * item.quantity).toFixed(2)}
                           </p>
                           <button
                             onClick={() => removeFromCart(item.id)}

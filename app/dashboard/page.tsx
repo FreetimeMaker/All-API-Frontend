@@ -16,18 +16,17 @@ interface HealthData {
 }
 
 interface Wallpaper {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  price: number;
-  currency: string;
+  cost: number;
+  currency?: string;
   category: string;
-  resolution?: string;
-  format?: string;
+  image_url: string;
 }
 
 interface Purchase {
-  productId: number;
+  productId: string;
   purchasedAt: string;
 }
 
@@ -250,25 +249,13 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-slate-100 truncate">{wallpaper.name}</h3>
                           <p className="text-xs text-slate-400 mt-1 line-clamp-2">{wallpaper.description}</p>
-                          <div className="flex gap-1 mt-1">
-                            {wallpaper.resolution && (
-                              <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
-                                {wallpaper.resolution}
-                              </span>
-                            )}
-                            {wallpaper.format && (
-                              <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
-                                {wallpaper.format}
-                              </span>
-                            )}
-                          </div>
                         </div>
                         <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-indigo-900/50 text-indigo-400 border border-indigo-800">
                           {wallpaper.category}
                         </span>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-100">${wallpaper.price} {wallpaper.currency}</span>
+                        <span className="text-sm font-bold text-slate-100">${wallpaper.cost} {wallpaper.currency || "USD"}</span>
                         <span className="text-[10px] text-indigo-400 font-medium">Purchased</span>
                       </div>
                     </div>

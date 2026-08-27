@@ -5,15 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import Spinner from "../../components/Spinner";
 
 interface CartItem {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  price: number;
-  currency: string;
+  cost: number;
+  currency?: string;
   category: string;
-  image?: string;
-  resolution?: string;
-  format?: string;
+  image_url: string;
   quantity: number;
 }
 
@@ -52,7 +50,7 @@ export default function CheckoutPage() {
   }, [router, supabase]);
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + item.cost * item.quantity,
     0
   );
 
@@ -67,7 +65,7 @@ export default function CheckoutPage() {
         items: cart.map(item => ({
           wallpaperId: item.id,
           quantity: item.quantity,
-          price: item.price
+          cost: item.cost
         })),
         total: cartTotal,
         currency: cart[0]?.currency || "USD"
@@ -175,9 +173,9 @@ export default function CheckoutPage() {
                     key={item.id}
                     className="flex gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700"
                   >
-                    {item.image ? (
+                    {item.image_url ? (
                       <img
-                        src={item.image}
+                        src={item.image_url}
                         alt={item.name}
                         className="w-24 h-24 object-cover rounded"
                       />
@@ -194,7 +192,7 @@ export default function CheckoutPage() {
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-slate-400">Qty: {item.quantity}</span>
                         <span className="font-semibold text-white">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ${(item.cost * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
