@@ -26,7 +26,11 @@ interface Wallpaper {
 }
 
 interface Purchase {
-  productId: string;
+  wallpaperId: string;
+  name: string;
+  cost: number;
+  image_url: string;
+  category: string;
   purchasedAt: string;
 }
 
@@ -59,12 +63,19 @@ export default function DashboardPage() {
         setHealth(healthRes);
 
         const purchases: Purchase[] = authRes.data.user.user_metadata?.purchases || [];
-        if (purchases.length > 0 && wallpapersRes) {
-          const allWallpapers: Wallpaper[] = Array.isArray(wallpapersRes) ? wallpapersRes : wallpapersRes.wallpapers || [];
-          const purchased = allWallpapers.filter((p: Wallpaper) =>
-            purchases.some((pur: Purchase) => pur.productId === p.id)
-          );
-          setPurchasedWallpapers(purchased);
+        console.log("User purchases:", purchases);
+        if (purchases.length > 0) {
+          // Create purchased wallpapers from purchase data directly
+          const purchasedWallpapersData: Wallpaper[] = purchases.map((purchase: Purchase) => ({
+            id: purchase.wallpaperId,
+            name: purchase.name,
+            description: `Purchased on ${new Date(purchase.purchasedAt).toLocaleDateString()}`,
+            cost: purchase.cost,
+            currency: "USD",
+            category: purchase.category || "Purchased",
+            image_url: purchase.image_url || ""
+          }));
+          setPurchasedWallpapers(purchasedWallpapersData);
         }
 
         supabase
@@ -245,17 +256,24 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {purchasedWallpapers.map((wallpaper) => (
                     <div key={wallpaper.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
-                      <div className="flex items-start justify-between">
+                      <div className="flex gap-3">
+                        {wallpaper.image_url && (
+                          <img
+                            src={wallpaper.image_url}
+                            alt={wallpaper.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-slate-100 truncate">{wallpaper.name}</h3>
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{wallpaper.description}</p>
+                          <p className="text-xs text-slate-400 mt-1">{wallpaper.description}</p>
                         </div>
-                        <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-indigo-900/50 text-indigo-400 border border-indigo-800">
-                          {wallpaper.category}
+                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-900/50 text-emerald-400 border border-emerald-800">
+                          Owned
                         </span>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-100">${wallpaper.cost} {wallpaper.currency || "USD"}</span>
+                        <span className="text-sm font-bold text-slate-100">${wallpaper.cost}</span>
                         <span className="text-[10px] text-indigo-400 font-medium">Purchased</span>
                       </div>
                     </div>

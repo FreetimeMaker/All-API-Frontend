@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   }, [router, supabase]);
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.cost * item.quantity,
+    (total, item) => total + item.cost,
     0
   );
 
@@ -64,7 +64,7 @@ export default function CheckoutPage() {
         userId: user.id,
         items: cart.map(item => ({
           wallpaperId: item.id,
-          quantity: item.quantity,
+          quantity: 1, // Always 1 for single purchase
           cost: item.cost
         })),
         total: cartTotal,
@@ -84,24 +84,36 @@ export default function CheckoutPage() {
       }
 
       const order = await response.json();
+      console.log("Order created successfully:", order);
 
-      // Clear cart
+      // Update user metadata with purchase BEFORE clearing cart
+      const { data: { user: updatedUser }, error: updateError } = await supabase.auth.updateUser({
+        data: { 
+          purchases: [
+            ...(user.user_metadata?.purchases || []),
+            ...cart.map(item => ({
+              wallpaperId: item.id,
+              name: item.name,
+              cost: item.cost,
+              image_url: item.image_url,
+              category: item.category,
+              purchasedAt: new Date().toISOString()
+            }))
+          ]
+        }
+      });
+
+      if (updateError) {
+        console.error("Error updating user metadata:", updateError);
+        // Don't throw error, continue with order success
+        console.warn("Continuing without metadata update");
+      } else {
+        console.log("User metadata updated successfully");
+      }
+
+      // Clear cart only after successful metadata update
       localStorage.removeItem("wallora_wallpaper_cart");
       setCart([]);
-
-      // Update user metadata with purchase
-      const purchases = user.user_metadata?.purchases || [];
-      const newPurchases = [
-        ...purchases,
-        ...cart.map(item => ({
-          productId: item.id,
-          purchasedAt: new Date().toISOString()
-        }))
-      ];
-
-      await supabase.auth.updateUser({
-        data: { purchases: newPurchases }
-      });
 
       setSuccess(true);
       
@@ -190,9 +202,9 @@ export default function CheckoutPage() {
                       <h3 className="font-medium text-white">{item.name}</h3>
                       <p className="text-sm text-slate-400">{item.category}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-slate-400">Qty: {item.quantity}</span>
+                        <span className="text-slate-400">Qty: 1</span>
                         <span className="font-semibold text-white">
-                          ${(item.cost * item.quantity).toFixed(2)}
+                          ${item.cost.toFixed(2)}
                         </span>
                       </div>
                     </div>

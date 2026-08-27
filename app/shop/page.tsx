@@ -25,6 +25,7 @@ export default function WalloraShopPage() {
   const [user, setUser] = useState<any>(null);
   const [products, setProducts] = useState<WalloraProduct[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
   const router = useRouter();
@@ -37,42 +38,69 @@ export default function WalloraShopPage() {
         router.push("/login");
       } else {
         setUser(user);
-        // Load wallpapers from Wallora endpoint
-        fetch("/api/proxy/api/v1/wallora/wallpapers")
-          .then((res) => res.json())
-          .then((data) => {
-            const productsData = Array.isArray(data) ? data : data.wallpapers || [];
-            setProducts(productsData);
-            setLoading(false);
-          })
-          .catch((error) => {
-            console.error("Error loading Wallora wallpapers:", error);
-            setLoading(false);
-          });
       }
     });
-
-    // Load cart from localStorage
-    const savedCart = localStorage.getItem("wallora_wallpaper_cart");
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    }
   }, [router, supabase]);
+
+  useEffect(() => {
+    // Load data when user is available
+    if (!user) return;
+    
+    // Load purchased IDs from user metadata
+    const purchases = user.user_metadata?.purchases || [];
+    const purchasedIdsSet: Set<string> = new Set(purchases.map((p: any) => p.wallpaperId));
+    setPurchasedIds(purchasedIdsSet);
+    
+    // Load wallpapers from Wallora endpoint
+    fetch("/api/proxy/api/v1/wallora/wallpapers")
+      .then((res) => res.json())
+      .then((data) => {
+        const productsData = Array.isArray(data) ? data : data.wallpapers || [];
+        setProducts(productsData);
+        
+        // Filter cart to remove already purchased items
+        const savedCart = localStorage.getItem("wallora_wallpaper_cart");
+        if (savedCart) {
+          const cartData = JSON.parse(savedCart);
+          const filteredCart = cartData.filter((item: any) => !purchasedIdsSet.has(item.id));
+          setCart(filteredCart);
+          localStorage.setItem("wallora_wallpaper_cart", JSON.stringify(filteredCart));
+        }
+        
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error loading Wallora wallpapers:", error);
+        setLoading(false);
+      });
+  }, [user]);
 
   useEffect(() => {
     // Save cart to localStorage whenever it changes
     localStorage.setItem("wallora_wallpaper_cart", JSON.stringify(cart));
   }, [cart]);
 
+  useEffect(() => {
+    // Update purchased IDs when user changes
+    if (user) {
+      const purchases = user.user_metadata?.purchases || [];
+      const purchasedIdsSet: Set<string> = new Set(purchases.map((p: any) => p.wallpaperId));
+      setPurchasedIds(purchasedIdsSet);
+    }
+  }, [user]);
+
   const addToCart = (product: WalloraProduct) => {
+    // Check if already purchased
+    if (purchasedIds.has(product.id)) {
+      console.log("Item already purchased, cannot add to cart");
+      return;
+    }
+    
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+        // Already in cart, don't increase quantity (single purchase only)
+        return prevCart;
       }
       return [...prevCart, { ...product, quantity: 1 }];
     });
@@ -85,21 +113,25 @@ export default function WalloraShopPage() {
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
-    } else {
+    } else if (quantity === 1) {
+      // Only allow quantity of 1 (single purchase)
       setCart((prevCart) =>
         prevCart.map((item) =>
-          item.id === productId ? { ...item, quantity } : item
+          item.id === productId ? { ...item, quantity: 1 } : item
         )
       );
+    } else {
+      // Don't allow quantities greater than 1
+      return;
     }
   };
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.cost * item.quantity,
+    (total, item) => total + item.cost,
     0
   );
 
-  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartItemCount = cart.length;
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -179,12 +211,21 @@ export default function WalloraShopPage() {
                     <span className="text-xl font-bold text-white">${product.cost}</span>
                     <span className="text-sm text-slate-400 ml-1">{product.currency || "USD"}</span>
                   </div>
-                  <button
-                    onClick={() => addToCart(product)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors text-sm font-medium"
-                  >
-                    Add to Cart
-                  </button>
+                  {purchasedIds.has(product.id) ? (
+                    <button
+                      disabled
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg opacity-80 text-sm font-medium cursor-not-allowed"
+                    >
+                      Owned
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors text-sm font-medium"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -250,26 +291,11 @@ export default function WalloraShopPage() {
                         <div className="flex-1">
                           <h4 className="font-medium text-white">{item.name}</h4>
                           <p className="text-sm text-slate-400">${item.cost} {item.currency || "USD"}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="w-8 h-8 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors"
-                            >
-                              -
-                            </button>
-                            <span className="text-white font-medium">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="w-8 h-8 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <p className="text-xs text-emerald-400 mt-1">Digital download</p>
+                          <p className="text-xs text-emerald-400 mt-2">Digital download (single purchase)</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-white">
-                            ${(item.cost * item.quantity).toFixed(2)}
+                            ${item.cost.toFixed(2)}
                           </p>
                           <button
                             onClick={() => removeFromCart(item.id)}
