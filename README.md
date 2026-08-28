@@ -1,6 +1,6 @@
 # IMPORTANT
 
-## Now under [Website](https://github.com/FreetimeMaker/Multi-Node-Apps/tree/main/API-Dashboard)
+## Now under [Website](https://github.com/FreetimeMaker/Multi-Node-Apps/tree/main/dashboard)
 
 # All API Frontend
 
