@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import { validatePromo, normalizeCode } from "@/lib/promo-codes";
 import SolanaPayModal from "../components/dashboard/SolanaPayModal";
 import Spinner from "../components/Spinner";
 
@@ -63,6 +64,10 @@ export default function WalloraShopPage() {
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoState, setPromoState] = useState<{ code: string; amountOff: number; total: number } | null>(null);
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
 
   const currentTier = activePlan ? (planTier[activePlan.toLowerCase()] ?? -1) : -1;
 
@@ -183,10 +188,63 @@ export default function WalloraShopPage() {
 
   const cartTotal = cart.reduce((total, item) => total + item.cost, 0);
   const cartItemCount = cart.length;
+  const promoTotal = promoState ? (cartTotal - promoState.amountOff) : cartTotal;
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
+
+    // Pass promo code to checkout if one is applied
+    if (promoState) {
+      localStorage.setItem("wallora_checkout_promo", JSON.stringify({ code: promoState.code }));
+    } else {
+      localStorage.removeItem("wallora_checkout_promo");
+    }
+
     router.push("/shop/checkout");
+  };
+
+  const applyPromo = async () => {
+    const code = normalizeCode(promoInput);
+    if (!code) return;
+
+    setPromoChecking(true);
+    setPromoMsg(null);
+
+    const { data, error } = await supabase
+      .from("promo_codes")
+      .select("id, code, discount_type, discount_value, max_uses, used_count, expires_at, active")
+      .ilike("code", code)
+      .maybeSingle();
+
+    setPromoChecking(false);
+
+    if (error) {
+      setPromoMsg({ ok: false, text: "Unable to check this code right now." });
+      return;
+    }
+
+    const result = validatePromo(data as any, cartTotal);
+    if (!result.ok || !result.promo) {
+      setPromoMsg({ ok: false, text: result.error || "Invalid code." });
+      setPromoState(null);
+      return;
+    }
+
+    setPromoState({ code: result.promo.code, amountOff: result.amountOff!, total: result.total! });
+    setPromoInput("");
+    setPromoMsg({
+      ok: true,
+      text: result.promo.discount_type === "percent"
+        ? `${result.promo.discount_value}% off applied — you save $${result.amountOff!.toFixed(2)}.`
+        : `$${result.promo.discount_value.toFixed(2)} off applied.`,
+    });
+    setTimeout(() => setPromoMsg(null), 8000);
+  };
+
+  const removePromo = () => {
+    setPromoState(null);
+    setPromoInput("");
+    setPromoMsg(null);
   };
 
   function handlePlanPay(plan: Plan) {
@@ -573,9 +631,61 @@ export default function WalloraShopPage() {
 
               {cart.length > 0 && (
                 <div className="border-t border-slate-800 p-4 bg-slate-900">
-                  <div className="flex justify-between items-center mb-4">
+                  {/* Promo Code */}
+                  <div className="mb-4">
+                    {promoMsg && (
+                      <div className={`px-3 py-2 rounded-lg text-xs font-medium mb-2 ${promoMsg.ok ? "bg-emerald-950/60 border border-emerald-800/50 text-emerald-300" : "bg-amber-950/60 border border-amber-800/50 text-amber-300"}`}>
+                        {promoMsg.text}
+                      </div>
+                    )}
+                    {promoState ? (
+                      <div className="flex items-center justify-between bg-slate-800 border border-emerald-800/50 rounded-lg px-3 py-2">
+                        <div>
+                          <span className="text-xs font-medium text-emerald-300 uppercase tracking-wider">{promoState.code}</span>
+                          <p className="text-xs text-slate-400">-${promoState.amountOff.toFixed(2)} discount applied</p>
+                        </div>
+                        <button
+                          onClick={removePromo}
+                          className="text-xs text-red-400 hover:text-red-300 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoInput}
+                          onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => { if (e.key === "Enter") applyPromo(); }}
+                          placeholder="Promo code"
+                          disabled={promoChecking}
+                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm font-mono tracking-wider focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                        />
+                        <button
+                          onClick={applyPromo}
+                          disabled={promoChecking || !promoInput.trim()}
+                          className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center mb-1">
                     <span className="text-slate-400">Subtotal</span>
                     <span className="text-xl font-bold text-white">${cartTotal.toFixed(2)}</span>
+                  </div>
+                  {promoState && (
+                    <div className="flex justify-between items-center mb-1 text-emerald-400">
+                      <span className="text-slate-400">Discount</span>
+                      <span className="font-semibold">-${promoState.amountOff.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center mb-4 border-t border-slate-700 pt-2">
+                    <span className="text-slate-400">Total</span>
+                    <span className="text-xl font-bold text-white">${Math.max(0, promoTotal).toFixed(2)}</span>
                   </div>
                   <button
                     onClick={handleCheckout}

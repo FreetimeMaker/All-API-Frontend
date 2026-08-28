@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import { validatePromo, normalizeCode } from "@/lib/promo-codes";
 import SolanaPayModal from "../../components/dashboard/SolanaPayModal";
 import Spinner from "../../components/Spinner";
 
@@ -25,8 +26,33 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [promo, setPromo] = useState<{ code: string; amountOff: number; total: number } | null>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  const loadPromo = async (cartData: CartItem[]) => {
+    const savedPromo = localStorage.getItem("wallora_checkout_promo");
+    if (!savedPromo) return;
+
+    try {
+      const { code } = JSON.parse(savedPromo);
+      if (!code) return;
+
+      const { data } = await supabase
+        .from("promo_codes")
+        .select("id, code, discount_type, discount_value, max_uses, used_count, expires_at, active")
+        .ilike("code", normalizeCode(code))
+        .maybeSingle();
+
+      const subtotal = cartData.reduce((t: number, item: CartItem) => t + item.cost, 0);
+      const result = validatePromo(data as any, subtotal);
+      if (result.ok && result.amountOff !== undefined && result.total !== undefined) {
+        setPromo({ code: result.promo!.code, amountOff: result.amountOff, total: result.total });
+      }
+    } catch {
+      // ignore invalid promo payload
+    }
+  };
 
   useEffect(() => {
     // Check authentication
@@ -43,6 +69,8 @@ export default function CheckoutPage() {
             router.push("/shop");
           } else {
             setCart(cartData);
+            // Load promo code carried over from the cart sidebar
+            loadPromo(cartData);
           }
         } else {
           router.push("/shop");
@@ -56,6 +84,8 @@ export default function CheckoutPage() {
     (total, item) => total + item.cost,
     0
   );
+  const discountAmount = promo ? promo.amountOff : 0;
+  const checkoutTotal = Math.max(0, cartTotal - discountAmount);
 
   const createOrder = async () => {
     setProcessing(true);
@@ -70,7 +100,7 @@ export default function CheckoutPage() {
           quantity: 1, // Always 1 for single purchase
           cost: item.cost
         })),
-        total: cartTotal,
+        total: checkoutTotal,
         currency: cart[0]?.currency || "USD"
       };
 
@@ -114,9 +144,25 @@ export default function CheckoutPage() {
         console.log("User metadata updated successfully");
       }
 
-      // Clear cart only after successful metadata update
+      // Increment promo code usage count if a code was applied
+      if (promo) {
+        const { data: promoRow } = await supabase
+          .from("promo_codes")
+          .select("used_count")
+          .ilike("code", promo.code)
+          .maybeSingle();
+        const currentCount = promoRow?.used_count ?? 0;
+        await supabase
+          .from("promo_codes")
+          .update({ used_count: currentCount + 1 })
+          .eq("code", promo.code);
+      }
+
+      // Clear cart + promo only after successful order
       localStorage.removeItem("wallora_wallpaper_cart");
+      localStorage.removeItem("wallora_checkout_promo");
       setCart([]);
+      setPromo(null);
 
       setSuccess(true);
       
@@ -237,6 +283,12 @@ export default function CheckoutPage() {
                   <span>Subtotal</span>
                   <span className="text-white">${cartTotal.toFixed(2)}</span>
                 </div>
+                {promo && (
+                  <div className="flex justify-between text-emerald-400">
+                    <span>Discount ({promo.code})</span>
+                    <span>-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-slate-400">
                   <span>Tax</span>
                   <span className="text-white">$0.00</span>
@@ -247,7 +299,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="border-t border-slate-700 pt-4 flex justify-between">
                   <span className="text-lg font-semibold text-white">Total</span>
-                  <span className="text-lg font-bold text-white">${cartTotal.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-white">${checkoutTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -265,7 +317,7 @@ export default function CheckoutPage() {
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2.5 5.5L8 2L13.5 5.5V10.5L8 14L2.5 10.5V5.5Z" fill="white" />
                 </svg>
-                {processing ? "Processing..." : `Pay $${cartTotal.toFixed(2)} with Solana`}
+                {processing ? "Processing..." : `Pay $${checkoutTotal.toFixed(2)} with Solana`}
               </button>
 
               <p className="mt-3 text-center text-xs text-slate-500">Your order is created after the Solana payment is confirmed.</p>
@@ -276,7 +328,7 @@ export default function CheckoutPage() {
 
       <SolanaPayModal
         open={showPayModal}
-        amount={cartTotal}
+        amount={checkoutTotal}
         label="Wallora Wallpapers"
         message={`Purchase ${cart.length} wallpaper${cart.length === 1 ? "" : "s"}`}
         onSuccess={handlePaymentSuccess}
