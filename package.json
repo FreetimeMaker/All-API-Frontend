@@ -1,6 +1,6 @@
 {
   "name": "all-api-frontend",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
