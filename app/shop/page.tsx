@@ -98,7 +98,7 @@ export default function WalloraShopPage() {
     setPurchasedIds(purchasedIdsSet);
 
     // Load wallpapers from Wallora endpoint
-    fetch("https://api.free-time.me/v1/wallora/wallpapers")
+    fetch("/api/wallora/wallpapers")
       .then((res) => res.json())
       .then((data) => {
         const productsData = Array.isArray(data) ? data : data.wallpapers || [];
@@ -125,7 +125,7 @@ export default function WalloraShopPage() {
       });
 
     // Load GeoWeather plans + current plan
-    fetch("https://api.free-time.me/v1/geoweather/subscriptions/plans")
+    fetch("/api/geoweather/subscriptions/plans")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {

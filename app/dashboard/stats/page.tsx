@@ -8,8 +8,6 @@ interface HealthData {
   status: number;
   body: {
     status: string;
-    service: string;
-    timestamp: string;
     checks: Record<string, string>;
   } | null;
 }
@@ -51,7 +49,6 @@ export default function StatsPage() {
     {
       title: "API Status",
       value: health?.ok ? "Operational" : "Down",
-      detail: health?.body?.service || "N/A",
       color: health?.ok ? "emerald" : "red",
     },
     {
@@ -95,14 +92,6 @@ export default function StatsPage() {
               <div>
                 <p className="text-slate-500">Status</p>
                 <p className="text-slate-200 font-medium">{health.body.status}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">Service</p>
-                <p className="text-slate-200 font-medium">{health.body.service}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">Last Checked</p>
-                <p className="text-slate-200 font-medium">{new Date(health.body.timestamp).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-slate-500">Response Code</p>

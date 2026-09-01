@@ -56,7 +56,7 @@ export default function DashboardPage() {
     Promise.all([
       supabase.auth.getUser(),
       fetch("/api/health").then(r => r.json()),
-      fetch("https://api.free-time.me/v2/wallora/wallpapers").then(r => r.ok ? r.json() : null),
+      fetch("/api/wallora/wallpapers").then(r => r.ok ? r.json() : null),
     ]).then(([authRes, healthRes, wallpapersRes]) => {
       if (!authRes.data.user) {
         setUser(null);
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                   <div className="h-8 w-8 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-400 text-xs font-bold">API</div>
                   <div className="flex-1">
                     <p className="text-slate-100 font-medium">Health Check</p>
-                    <p className="text-slate-400 text-xs">{health.body.service} &mdash; {health.body.status}</p>
+                    <p className="text-slate-400 text-xs">{health.body.status}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded ${health.ok ? "bg-emerald-900/50 text-emerald-400" : "bg-red-900/50 text-red-400"}`}>
                     {health.ok ? "OK" : "Error"}
