@@ -73,8 +73,7 @@ export default function AuthNav() {
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <a href="/sol-arcade" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Arcade</a>
-            <a href="/login" className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Login</a>
+            <Link href="/login" className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Login</Link>
           </div>
         )}
       </div>
