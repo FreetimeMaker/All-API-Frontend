@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE || "https://free-time.me/api";
-const HEALTH_PATH = "/v1/health";
+const API_BASE = process.env.API_BASE || "https://api.free-time.me";
+const HEALTH_PATH = "/v2/health";
 const HEALTH_TIMEOUT = 3000;
 
 export async function GET() {

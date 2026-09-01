@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/dashboard", "/auth", "/login", "/logout", "/api/"],
       },
     ],
-    sitemap: "https://all-api.vercel.app/sitemap.xml",
+    sitemap: "https://dashboard.free-time.me/sitemap.xml",
   };
 }

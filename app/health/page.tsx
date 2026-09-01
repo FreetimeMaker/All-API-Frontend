@@ -19,7 +19,7 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch("https://api.free-time.me/v2/health")
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

@@ -125,7 +125,7 @@ export default function SupportPage() {
         </a>
 
         <a
-          href="https://github.com/FreetimeMaker/Multi-Node-Apps/issues"
+          href="https://github.com/FreetimeMaker/All-API-Frontend/issues"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-slate-800 rounded-xl border border-slate-700 p-4 shadow-sm hover:border-slate-600 transition-colors"

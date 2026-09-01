@@ -23,7 +23,7 @@ export default function StatsPage() {
   useEffect(() => {
     Promise.all([
       supabase.auth.getUser(),
-      fetch("/api/health").then(r => r.json()),
+      fetch("https://api.free-time.me/v2/health").then(r => r.json()),
     ]).then(([authRes, healthRes]) => {
       setUser(authRes.data.user);
       setHealth(healthRes);

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s | All API",
   },
   description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
-  metadataBase: new URL("https://all-api.vercel.app"),
+  metadataBase: new URL("https://api.free-time.me"),
   openGraph: {
     type: "website",
     locale: "en_US",
