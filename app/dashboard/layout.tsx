@@ -1,28 +1,23 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Sidebar from "../components/dashboard/Sidebar";
 import Spinner from "../components/Spinner";
+import Landing from "../components/Landing";
 import type { User } from "@supabase/supabase-js";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }: { data: { user: import("@supabase/supabase-js").User | null } }) => {
-      if (!user) {
-        router.push("/login");
-      } else {
-        setUser(user);
-      }
+      setUser(user);
       setLoading(false);
     });
-  }, [router, supabase]);
+  }, [supabase]);
 
   if (loading) {
     return (
@@ -35,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  if (!user) return null;
+  if (!user) return <Landing />;
 
   return (
     <div className="flex bg-slate-950 min-h-[calc(100vh-64px)]">

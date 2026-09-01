@@ -1,4 +1,4 @@
-const API_ORIGIN = "https://all-api-node.vercel.app";
+const API_ORIGIN = "https://api-data-xi.vercel.app";
 
 export function proxyImageUrl(url: string): string {
   if (!url) return "";

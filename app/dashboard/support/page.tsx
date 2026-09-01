@@ -108,7 +108,7 @@ export default function SupportPage() {
       {/* Contact Info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <a
-          href="mailto:support@freetimemaker.com"
+          href="mailto:FreetimeMaker@proton.me"
           className="bg-slate-800 rounded-xl border border-slate-700 p-4 shadow-sm hover:border-slate-600 transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -119,13 +119,13 @@ export default function SupportPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-100">Email</p>
-              <p className="text-xs text-slate-400">support@freetimemaker.com</p>
+              <p className="text-xs text-slate-400">FreetimeMaker@proton.me</p>
             </div>
           </div>
         </a>
 
         <a
-          href="https://github.com/FreetimeMaker/All-API-Frontend/issues"
+          href="https://github.com/FreetimeMaker/Multi-Node-Apps/issues"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-slate-800 rounded-xl border border-slate-700 p-4 shadow-sm hover:border-slate-600 transition-colors"

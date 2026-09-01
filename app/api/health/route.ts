@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE || "https://all-api-node.vercel.app";
-const HEALTH_PATH = "/api/v1/health";
+const API_BASE = process.env.API_BASE || "https://free-time.me/api";
+const HEALTH_PATH = "/v1/health";
 const HEALTH_TIMEOUT = 3000;
 
 export async function GET() {

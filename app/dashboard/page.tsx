@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
+import Landing from "@/app/components/Landing";
 import type { User } from "@supabase/supabase-js";
 
 interface HealthData {
@@ -55,10 +56,10 @@ export default function DashboardPage() {
     Promise.all([
       supabase.auth.getUser(),
       fetch("/api/health").then(r => r.json()),
-      fetch("/api/proxy/api/v1/wallora/wallpapers").then(r => r.ok ? r.json() : null),
+      fetch("/api/proxy/v1/wallora/wallpapers").then(r => r.ok ? r.json() : null),
     ]).then(([authRes, healthRes, wallpapersRes]) => {
       if (!authRes.data.user) {
-        router.push("/login");
+        setUser(null);
       } else {
         setUser(authRes.data.user);
         setHealth(healthRes);
@@ -103,7 +104,7 @@ export default function DashboardPage() {
     return <div className="p-8 text-slate-300">Loading...</div>;
   }
 
-  if (!user) return null;
+  if (!user) return <Landing />;
 
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "User";
   const provider = user.app_metadata?.provider || "unknown";

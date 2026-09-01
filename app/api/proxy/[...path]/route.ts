@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE || "https://all-api-node.vercel.app";
+const API_BASE = process.env.API_BASE || "https://free-time.me/api";
 const PROXY_TIMEOUT = 15000; // 15 seconds
 
 async function checkApiHealth() {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), 2000); // 2s health check
   try {
-    const res = await fetch(`${API_BASE}/api/v1/health`, {
+    const res = await fetch(`${API_BASE}/v1/health`, {
       signal: controller.signal,
       cache: 'no-store'
     });

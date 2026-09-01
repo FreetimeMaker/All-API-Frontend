@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
+  assetPrefix: "/dashboard",
 };
 
 export default nextConfig;

@@ -1,11 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { validatePromo, normalizeCode } from "@/lib/promo-codes";
 import SolanaPayModal from "../../components/dashboard/SolanaPayModal";
 import Spinner from "../../components/Spinner";
+
+const HallidayPayButton = dynamic(() => import("../../components/dashboard/HallidayPayButton"), { ssr: false });
 
 interface CartItem {
   id: string;
@@ -104,7 +107,7 @@ export default function CheckoutPage() {
         currency: cart[0]?.currency || "USD"
       };
 
-      const response = await fetch("/api/proxy/api/v1/wallora/orders", {
+      const response = await fetch("/api/proxy/v1/wallora/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,7 +323,18 @@ export default function CheckoutPage() {
                 {processing ? "Processing..." : `Pay $${checkoutTotal.toFixed(2)} with Solana`}
               </button>
 
-              <p className="mt-3 text-center text-xs text-slate-500">Your order is created after the Solana payment is confirmed.</p>
+              <p className="mt-3 text-center text-xs text-slate-500">Your order is created after the payment is confirmed.</p>
+
+              <HallidayPayButton
+                amount={checkoutTotal}
+                label="Wallora Wallpapers"
+                disabled={processing || cart.length === 0}
+                onSuccess={handlePaymentSuccess}
+                onError={(m) => setError(`Payment failed: ${m}`)}
+                className="w-full mt-2 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                Or pay ${checkoutTotal.toFixed(2)} with Card / Crypto
+              </HallidayPayButton>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Support",
-  description: "Get help with All API, report issues, and contact the Freetime Maker team.",
+  description: "Get help with All API, report issues, and contact me.",
   robots: { index: false, follow: false },
 };
 

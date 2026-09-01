@@ -43,7 +43,7 @@ export default function AuthNav() {
   return (
     <nav className="max-w-4xl mx-auto flex items-center justify-between py-2">
       <div className="flex items-center gap-4">
-            <Link href="/" className="font-semibold text-lg text-slate-100">All API</Link>
+            <Link href="/dashboard" className="font-semibold text-lg text-slate-100">All API</Link>
         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-medium uppercase tracking-wider text-slate-400">
           <div className={`h-2 w-2 rounded-full ${healthStatus === "ok" ? "bg-emerald-500" : healthStatus === "error" ? "bg-red-500" : "bg-amber-400 animate-pulse"}`} />
           API {healthStatus === "ok" ? "Online" : healthStatus === "error" ? "Offline" : "Checking"}
@@ -59,6 +59,7 @@ export default function AuthNav() {
           <div className="flex items-center gap-4">
             <a href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Dashboard</a>
             <a href="/shop" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Shop</a>
+            <a href="/sol-arcade" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Arcade</a>
             <div className="flex items-center gap-3">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={`${name} profile`} className="h-8 w-8 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -72,7 +73,10 @@ export default function AuthNav() {
             </div>
           </div>
         ) : (
-          <a href="/login" className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Login</a>
+          <div className="flex items-center gap-4">
+            <a href="/sol-arcade" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Arcade</a>
+            <a href="/login" className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Login</a>
+          </div>
         )}
       </div>
     </nav>
