@@ -20,11 +20,11 @@ export const metadata: Metadata = {
     template: "%s | All API",
   },
   description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
-  metadataBase: new URL("https://api.free-time.me"),
+  metadataBase: new URL("https://dashboard.free-time.me"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "All API",
+    siteName: "All API Dashboard",
     title: "All API — Freetime Maker",
     description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
   },
