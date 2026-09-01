@@ -7,7 +7,6 @@ interface HealthData {
   status: number;
   body: {
     status: string;
-    timestamp: string;
     checks: Record<string, string>;
   } | null;
   error?: string;
@@ -64,10 +63,6 @@ export default function HealthPage() {
                 <div>
                   <p className="text-slate-500 text-xs uppercase tracking-wider">HTTP Code</p>
                   <p className="text-slate-100 font-medium mt-1">{data.status}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">Last Checked</p>
-                  <p className="text-slate-100 font-medium mt-1">{new Date(data.body.timestamp).toLocaleString()}</p>
                 </div>
               </div>
             </div>
