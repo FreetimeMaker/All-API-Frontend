@@ -7,7 +7,6 @@ interface HealthData {
   status: number;
   body: {
     status: string;
-    service: string;
     timestamp: string;
     checks: Record<string, string>;
   } | null;
@@ -19,7 +18,7 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("https://api.free-time.me/v2/health")
+    fetch("/api/health")
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -51,17 +50,13 @@ export default function HealthPage() {
             {isUp ? "All Systems Operational" : "System Disrupted"}
           </div>
           <h1 className="text-3xl font-bold text-white">System Status</h1>
-          <p className="mt-2 text-slate-400">Freetime Maker API health overview</p>
+          <p className="mt-2 text-slate-400">All API health overview</p>
         </div>
 
         {data?.body && (
           <div className="space-y-4">
             <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-500 text-xs uppercase tracking-wider">Service</p>
-                  <p className="text-slate-100 font-medium mt-1">{data.body.service}</p>
-                </div>
                 <div>
                   <p className="text-slate-500 text-xs uppercase tracking-wider">Status</p>
                   <p className="text-slate-100 font-medium mt-1">{data.body.status}</p>
@@ -81,11 +76,10 @@ export default function HealthPage() {
               <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
                 <h2 className="text-sm text-slate-500 text-xs uppercase tracking-wider mb-4">Service Dependencies</h2>
                 <div className="space-y-3">
-                  {Object.entries(data.body.checks).map(([service, status]) => (
-                    <div key={service} className="flex items-center justify-between">
+                  {Object.entries(data.body.checks).map(([status]) => (
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className={`h-2.5 w-2.5 rounded-full ${status === "reachable" ? "bg-emerald-400" : "bg-red-400"}`} />
-                        <span className="text-sm text-slate-200 font-medium capitalize">{service}</span>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         status === "reachable"
