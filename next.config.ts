@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   assetPrefix: "/",
+
+
   async headers() {
     return [
       {
@@ -12,30 +14,29 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload"
-          }
-        ]
-      }
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+        ],
+      },
     ];
-  }
-};
-
-export default nextConfig;
-
-module.exports = {
+  },
+  
   async redirects() {
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         has: [
           {
-            type: 'host',
-            value: 'dashboard.free-time.me',
+            type: "header",
+            key: "x-forwarded-proto",
+            value: "http",
           },
         ],
-        destination: 'https://dashboard.free-time.me/:path*',
+        destination: "https://dashboard.free-time.me/:path*",
         permanent: true,
       },
     ];
   },
 };
+
+export default nextConfig;
