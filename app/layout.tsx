@@ -44,21 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="w-full bg-slate-900 border-t border-slate-800 py-4 px-6 text-center">
           <p className="text-xs text-slate-500">&copy; 2026 Freetime Maker</p>
         </footer>
-
-        {/* Google tag (gtag.js) */}
-        <Script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-E05VRR273J"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-E05VRR273J');
-          `}
-        </Script>
       </body>
     </html>
   );
