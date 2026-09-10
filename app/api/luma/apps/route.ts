@@ -19,6 +19,9 @@ interface LumaSubmissionRow {
   category: string | null;
   status: string;
   submitted_at: string;
+  icon_url: string | null;
+  version: string | null;
+  platform: string | null;
 }
 
 interface PublicDeveloperInfo {
@@ -54,7 +57,7 @@ export async function GET() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("luma_submissions")
-      .select("id,user_id,name,description,link,category,status,submitted_at")
+      .select("id,user_id,name,description,link,category,status,submitted_at,icon_url,version,platform")
       .eq("status", "Approved")
       .order("submitted_at", { ascending: false });
 
@@ -101,6 +104,9 @@ export async function GET() {
       summary: app.description.length > 140 ? `${app.description.slice(0, 137)}...` : app.description,
       description: app.description,
       repositoryUrl: app.link,
+      iconUrl: app.icon_url,
+      version: app.version,
+      platform: app.platform,
       categories: app.category ? [app.category] : [],
       category: app.category,
       status: "Approved",
