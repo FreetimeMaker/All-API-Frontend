@@ -18,6 +18,10 @@ interface SupabaseWebhookPayload {
   old_record?: Partial<SubmissionRecord> | null;
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
 export async function POST(request: Request) {
   const configuredSecret = process.env.LUMA_STATUS_WEBHOOK_SECRET;
   const providedSecret = request.headers.get("x-luma-webhook-secret");
@@ -25,6 +29,8 @@ export async function POST(request: Request) {
   if (!configuredSecret || providedSecret !== configuredSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  let stage = "parse-payload";
 
   try {
     const payload = (await request.json()) as SupabaseWebhookPayload;
@@ -49,6 +55,7 @@ export async function POST(request: Request) {
       }
     }
 
+    stage = "resolve-developer";
     const supabase = createAdminClient();
     const { data, error } = await supabase.auth.admin.getUserById(current.user_id);
     const user = data.user;
@@ -56,9 +63,13 @@ export async function POST(request: Request) {
 
     if (error || !user || !email) {
       console.error("Could not resolve submission developer:", error);
-      return NextResponse.json({ error: "Developer account could not be resolved." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Developer account could not be resolved.", stage },
+        { status: 404 }
+      );
     }
 
+    stage = "send-email";
     await sendLumaSubmissionStatusNotification({
       email,
       developerName: user.user_metadata?.full_name || user.user_metadata?.name || null,
@@ -69,7 +80,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, notificationSent: true });
   } catch (error) {
-    console.error("Luma status webhook failed:", error);
-    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+    const message = errorMessage(error);
+    console.error(`Luma status webhook failed at ${stage}:`, error);
+    return NextResponse.json(
+      { error: "Webhook processing failed.", stage, details: message },
+      { status: 500 }
+    );
   }
 }
