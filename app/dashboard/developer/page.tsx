@@ -322,7 +322,8 @@ export default function LumaDeveloperPortal() {
                       <select required value={appPlatform} onChange={(e) => setAppPlatform(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 transition-all">
                         <option value="Android">Android</option>
                         <option value="Windows">Windows</option>
-                        <option value="Linux">Linux</option>
+                        <option value="Linux (debian based)">Linux (debian based)</option>
+                        <option value="Linux (rpm based)">Linux (rpm based)</option>
                       </select>
                     </div>
                   </div>

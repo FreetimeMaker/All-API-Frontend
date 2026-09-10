@@ -1,6 +1,3 @@
--- Luma Store developer submission status tracking
--- This migration corresponds to the already-applied remote migration 20260910180127.
-
 alter table public.luma_submissions
   add column if not exists review_message text,
   add column if not exists status_updated_at timestamptz not null default now(),
@@ -26,32 +23,28 @@ create policy "Developers can read own submission history"
   on public.luma_submission_status_history
   for select
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
-create or replace function public.prepare_luma_submission_status()
+create or replace function public.track_luma_submission_status()
 returns trigger
 language plpgsql
+security invoker
 set search_path = public
 as $$
 begin
-  if tg_op = 'INSERT' then
-    new.status_updated_at := coalesce(new.status_updated_at, now());
-    return new;
-  end if;
-
-  if new.status is distinct from old.status
-     or new.review_message is distinct from old.review_message then
+  if tg_op = 'UPDATE' and (
+    new.status is distinct from old.status
+    or new.review_message is distinct from old.review_message
+  ) then
     new.status_updated_at := now();
-  end if;
 
-  if new.status is distinct from old.status then
-    if new.status = 'Approved' then
+    if new.status = 'Approved' and new.status is distinct from old.status then
       new.approved_at := now();
       new.rejected_at := null;
-    elsif new.status = 'Rejected' then
+    elsif new.status = 'Rejected' and new.status is distinct from old.status then
       new.rejected_at := now();
       new.approved_at := null;
-    else
+    elsif new.status not in ('Approved', 'Rejected') and new.status is distinct from old.status then
       new.approved_at := null;
       new.rejected_at := null;
     end if;
@@ -61,7 +54,12 @@ begin
 end;
 $$;
 
-create or replace function public.record_luma_submission_status_history()
+drop trigger if exists luma_submission_status_tracking_before on public.luma_submissions;
+create trigger luma_submission_status_tracking_before
+before update on public.luma_submissions
+for each row execute function public.track_luma_submission_status();
+
+create or replace function public.log_luma_submission_status_history()
 returns trigger
 language plpgsql
 security definer
@@ -70,67 +68,38 @@ as $$
 begin
   if tg_op = 'INSERT' then
     insert into public.luma_submission_status_history (
-      submission_id,
-      user_id,
-      status,
-      review_message,
-      created_at
+      submission_id, user_id, status, review_message, created_at
     ) values (
-      new.id,
-      new.user_id,
-      new.status,
-      new.review_message,
+      new.id, new.user_id, coalesce(new.status, 'Pending'), new.review_message,
       coalesce(new.submitted_at, now())
     );
   elsif new.status is distinct from old.status
      or new.review_message is distinct from old.review_message then
     insert into public.luma_submission_status_history (
-      submission_id,
-      user_id,
-      status,
-      review_message,
-      created_at
+      submission_id, user_id, status, review_message, created_at
     ) values (
-      new.id,
-      new.user_id,
-      new.status,
-      new.review_message,
-      now()
+      new.id, new.user_id, coalesce(new.status, 'Pending'), new.review_message, now()
     );
   end if;
-
-  return null;
+  return new;
 end;
 $$;
 
-drop trigger if exists luma_submission_status_tracking on public.luma_submissions;
-drop trigger if exists luma_submission_status_prepare on public.luma_submissions;
-drop trigger if exists luma_submission_status_history on public.luma_submissions;
+revoke all on function public.log_luma_submission_status_history() from public, anon, authenticated;
 
-create trigger luma_submission_status_prepare
-before insert or update on public.luma_submissions
-for each row execute function public.prepare_luma_submission_status();
-
-create trigger luma_submission_status_history
+drop trigger if exists luma_submission_status_history_after on public.luma_submissions;
+create trigger luma_submission_status_history_after
 after insert or update on public.luma_submissions
-for each row execute function public.record_luma_submission_status_history();
+for each row execute function public.log_luma_submission_status_history();
 
 insert into public.luma_submission_status_history (
-  submission_id,
-  user_id,
-  status,
-  review_message,
-  created_at
+  submission_id, user_id, status, review_message, created_at
 )
-select
-  s.id,
-  s.user_id,
-  s.status,
-  s.review_message,
-  coalesce(s.status_updated_at, s.submitted_at, now())
+select s.id, s.user_id, coalesce(s.status, 'Pending'), s.review_message,
+       coalesce(s.status_updated_at, s.submitted_at, now())
 from public.luma_submissions s
-where not exists (
-  select 1
-  from public.luma_submission_status_history h
-  where h.submission_id = s.id
-);
+where s.user_id is not null
+  and not exists (
+    select 1 from public.luma_submission_status_history h
+    where h.submission_id = s.id
+  );;
