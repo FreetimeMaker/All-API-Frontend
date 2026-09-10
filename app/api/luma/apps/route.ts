@@ -22,6 +22,7 @@ interface LumaSubmissionRow {
   icon_url: string | null;
   version: string | null;
   platform: string | null;
+  download_url: string | null;
 }
 
 interface PublicDeveloperInfo {
@@ -57,7 +58,7 @@ export async function GET() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("luma_submissions")
-      .select("id,user_id,name,description,link,category,status,submitted_at,icon_url,version,platform")
+      .select("id,user_id,name,description,link,category,status,submitted_at,icon_url,version,platform,download_url")
       .eq("status", "Approved")
       .order("submitted_at", { ascending: false });
 
@@ -107,11 +108,12 @@ export async function GET() {
       iconUrl: app.icon_url,
       version: app.version,
       platform: app.platform,
+      downloadUrl: app.download_url,
       categories: app.category ? [app.category] : [],
       category: app.category,
       status: "Approved",
       approved: true,
-      installable: false,
+      installable: Boolean(app.download_url),
       submittedAt: app.submitted_at,
       developer: developers.get(app.user_id) ?? {
         name: "Luma Developer",
