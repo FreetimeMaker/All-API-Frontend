@@ -12,6 +12,16 @@ interface AppSubmission {
   category: string;
 }
 
+interface LumaSubmissionRow {
+  id: string;
+  name: string;
+  description: string;
+  link: string | null;
+  status: AppSubmission["status"];
+  submitted_at: string;
+  category: string;
+}
+
 export default function LumaDeveloperPortal() {
   const [step, setStep] = useState(1);
   const [appName, setAppName] = useState("");
@@ -37,7 +47,7 @@ export default function LumaDeveloperPortal() {
         .order("submitted_at", { ascending: false });
 
       if (!error && data) {
-        setMyApps(data.map(item => ({
+        setMyApps(data.map((item: LumaSubmissionRow) => ({
           id: item.id,
           name: item.name,
           description: item.description,
@@ -256,7 +266,7 @@ export default function LumaDeveloperPortal() {
                         <option>Entertainment</option>
                         <option>Utilities</option>
                         <option>Lifestyle</option>
-                        <option>Health \u0026 Fitness</option>
+                        <option>Health & Fitness</option>
                       </select>
                     </div>
                     <div>
@@ -311,7 +321,7 @@ export default function LumaDeveloperPortal() {
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           Verifying...
                         </>
-                      ) : "Confirm \u0026 Submit"}
+                      ) : "Confirm & Submit"}
                     </button>
                     <button
                       type="button"
