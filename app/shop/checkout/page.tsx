@@ -251,7 +251,9 @@ export default function CheckoutPage() {
                       <img
                         src={proxyImageUrl(item.image_url)}
                         alt={item.name}
-                        className="w-24 h-24 object-cover rounded"
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
+                        className="w-24 h-24 object-cover rounded select-none"
                       />
                     ) : (
                       <div className="w-24 h-24 bg-slate-700 rounded flex items-center justify-center">

@@ -612,7 +612,9 @@ export default function WalloraShopPage() {
                           <img
                             src={proxyImageUrl(item.image_url)}
                             alt={item.name}
-                            className="w-20 h-20 object-cover rounded"
+                            draggable={false}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className="w-20 h-20 object-cover rounded select-none"
                           />
                         ) : (
                           <div className="w-20 h-20 bg-slate-700 rounded flex items-center justify-center">

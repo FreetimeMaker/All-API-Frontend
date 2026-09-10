@@ -260,7 +260,9 @@ export default function DashboardPage() {
                           <img
                             src={proxyImageUrl(wallpaper.image_url)}
                             alt={wallpaper.name}
-                            className="w-16 h-16 object-cover rounded"
+                            draggable={false}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className="w-16 h-16 object-cover rounded select-none"
                           />
                         )}
                         <div className="flex-1 min-w-0">
