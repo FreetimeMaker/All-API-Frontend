@@ -6,6 +6,14 @@ export interface SupportNotification {
   userId: string;
 }
 
+export interface LumaSubmissionNotification {
+  email: string;
+  developerName?: string | null;
+  appName: string;
+  status: "Pending" | "In Review" | "Approved" | "Rejected";
+  reviewMessage?: string | null;
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -15,13 +23,11 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-export async function sendSupportNotification(notification: SupportNotification) {
+async function sendEmail(payload: Record<string, unknown>) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  const to = process.env.EMAIL_NOTIFICATION_TO || "FreetimeMaker@proton.me";
 
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY and EMAIL_FROM must be configured");
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY must be configured");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -30,29 +36,7 @@ export async function sendSupportNotification(notification: SupportNotification)
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      reply_to: notification.email,
-      subject: `[Luma Support] ${notification.category}: ${notification.subject}`,
-      text: [
-        `New support message from ${notification.email}`,
-        `User ID: ${notification.userId}`,
-        `Category: ${notification.category}`,
-        `Subject: ${notification.subject}`,
-        "",
-        notification.message,
-      ].join("\n"),
-      html: `
-        <h2>New Luma support message</h2>
-        <p><strong>From:</strong> ${escapeHtml(notification.email)}</p>
-        <p><strong>User ID:</strong> ${escapeHtml(notification.userId)}</p>
-        <p><strong>Category:</strong> ${escapeHtml(notification.category)}</p>
-        <p><strong>Subject:</strong> ${escapeHtml(notification.subject)}</p>
-        <hr />
-        <p style="white-space: pre-wrap">${escapeHtml(notification.message)}</p>
-      `,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -61,4 +45,95 @@ export async function sendSupportNotification(notification: SupportNotification)
   }
 
   return response.json();
+}
+
+export async function sendSupportNotification(notification: SupportNotification) {
+  const from = process.env.EMAIL_FROM;
+  const to = process.env.EMAIL_NOTIFICATION_TO || "FreetimeMaker@proton.me";
+
+  if (!from) {
+    throw new Error("EMAIL_FROM must be configured");
+  }
+
+  return sendEmail({
+    from,
+    to: [to],
+    reply_to: notification.email,
+    subject: `[Luma Support] ${notification.category}: ${notification.subject}`,
+    text: [
+      `New support message from ${notification.email}`,
+      `User ID: ${notification.userId}`,
+      `Category: ${notification.category}`,
+      `Subject: ${notification.subject}`,
+      "",
+      notification.message,
+    ].join("\n"),
+    html: `
+      <h2>New Luma support message</h2>
+      <p><strong>From:</strong> ${escapeHtml(notification.email)}</p>
+      <p><strong>User ID:</strong> ${escapeHtml(notification.userId)}</p>
+      <p><strong>Category:</strong> ${escapeHtml(notification.category)}</p>
+      <p><strong>Subject:</strong> ${escapeHtml(notification.subject)}</p>
+      <hr />
+      <p style="white-space: pre-wrap">${escapeHtml(notification.message)}</p>
+    `,
+  });
+}
+
+export async function sendLumaSubmissionStatusNotification(
+  notification: LumaSubmissionNotification
+) {
+  const from = process.env.EMAIL_FROM;
+
+  if (!from) {
+    throw new Error("EMAIL_FROM must be configured");
+  }
+
+  const developerName = notification.developerName?.trim() || "Developer";
+  const statusCopy: Record<LumaSubmissionNotification["status"], { title: string; body: string }> = {
+    Pending: {
+      title: "Submission received",
+      body: "Your app submission has been received and is waiting for manual review.",
+    },
+    "In Review": {
+      title: "Your app is now in review",
+      body: "Your app is currently being reviewed manually by the Luma Store team.",
+    },
+    Approved: {
+      title: "Your app has been approved",
+      body: "Your app has been approved and is now eligible to appear in the Luma Store API.",
+    },
+    Rejected: {
+      title: "Your app submission was rejected",
+      body: "Your app was not approved in its current state. Please review the message below and update your submission if needed.",
+    },
+  };
+
+  const copy = statusCopy[notification.status];
+  const reviewerText = notification.reviewMessage?.trim();
+
+  return sendEmail({
+    from,
+    to: [notification.email],
+    subject: `[Luma Store] ${notification.appName}: ${notification.status}`,
+    text: [
+      `Hi ${developerName},`,
+      "",
+      copy.body,
+      `App: ${notification.appName}`,
+      `Status: ${notification.status}`,
+      reviewerText ? `Reviewer message: ${reviewerText}` : null,
+      "",
+      "You can see the latest status and full timeline in the Luma Store Developer Portal.",
+    ].filter(Boolean).join("\n"),
+    html: `
+      <h2>${escapeHtml(copy.title)}</h2>
+      <p>Hi ${escapeHtml(developerName)},</p>
+      <p>${escapeHtml(copy.body)}</p>
+      <p><strong>App:</strong> ${escapeHtml(notification.appName)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(notification.status)}</p>
+      ${reviewerText ? `<div style="margin:16px 0;padding:12px;border-left:4px solid #6366f1;background:#f8fafc"><strong>Reviewer message</strong><br>${escapeHtml(reviewerText)}</div>` : ""}
+      <p>You can see the latest status and full timeline in the Luma Store Developer Portal.</p>
+    `,
+  });
 }
