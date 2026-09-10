@@ -1,0 +1,67 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendLumaSubmissionStatusNotification } from "@/lib/email/provider";
+
+interface SubmissionRecord {
+  id: string;
+  user_id: string;
+  name: string;
+  status: "Pending" | "In Review" | "Approved" | "Rejected";
+  review_message?: string | null;
+}
+
+interface SupabaseWebhookPayload {
+  type?: string;
+  table?: string;
+  schema?: string;
+  record?: SubmissionRecord;
+  old_record?: Partial<SubmissionRecord> | null;
+}
+
+export async function POST(request: Request) {
+  const configuredSecret = process.env.LUMA_STATUS_WEBHOOK_SECRET;
+  const providedSecret = request.headers.get("x-luma-webhook-secret");
+
+  if (!configuredSecret || providedSecret !== configuredSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const payload = (await request.json()) as SupabaseWebhookPayload;
+
+    if (payload.table !== "luma_submissions" || payload.type !== "UPDATE" || !payload.record) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const current = payload.record;
+    const previous = payload.old_record;
+    const statusChanged = previous?.status !== current.status;
+    const reviewMessageChanged = previous?.review_message !== current.review_message;
+
+    if (!statusChanged && !reviewMessageChanged) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.auth.admin.getUserById(current.user_id);
+
+    if (error || !data.user?.email) {
+      console.error("Could not resolve submission developer:", error);
+      return NextResponse.json({ error: "Developer account could not be resolved." }, { status: 404 });
+    }
+
+    const user = data.user;
+    await sendLumaSubmissionStatusNotification({
+      email: user.email,
+      developerName: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      appName: current.name,
+      status: current.status,
+      reviewMessage: current.review_message || null,
+    });
+
+    return NextResponse.json({ ok: true, notificationSent: true });
+  } catch (error) {
+    console.error("Luma status webhook failed:", error);
+    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+  }
+}
