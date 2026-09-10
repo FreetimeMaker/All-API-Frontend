@@ -28,7 +28,42 @@ create policy "Developers can read own submission history"
   to authenticated
   using (auth.uid() = user_id);
 
-create or replace function public.track_luma_submission_status()
+-- Update timestamps before the row is stored.
+create or replace function public.prepare_luma_submission_status()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.status_updated_at := coalesce(new.status_updated_at, now());
+    return new;
+  end if;
+
+  if new.status is distinct from old.status
+     or new.review_message is distinct from old.review_message then
+    new.status_updated_at := now();
+  end if;
+
+  if new.status is distinct from old.status then
+    if new.status = 'Approved' then
+      new.approved_at := now();
+      new.rejected_at := null;
+    elsif new.status = 'Rejected' then
+      new.rejected_at := now();
+      new.approved_at := null;
+    else
+      new.approved_at := null;
+      new.rejected_at := null;
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+-- Write the timeline only after the parent submission row exists.
+create or replace function public.record_luma_submission_status_history()
 returns trigger
 language plpgsql
 security definer
@@ -36,8 +71,6 @@ set search_path = public
 as $$
 begin
   if tg_op = 'INSERT' then
-    new.status_updated_at := coalesce(new.status_updated_at, now());
-
     insert into public.luma_submission_status_history (
       submission_id,
       user_id,
@@ -51,25 +84,8 @@ begin
       new.review_message,
       coalesce(new.submitted_at, now())
     );
-
-    return new;
-  end if;
-
-  if new.status is distinct from old.status
+  elsif new.status is distinct from old.status
      or new.review_message is distinct from old.review_message then
-    new.status_updated_at := now();
-
-    if new.status = 'Approved' and new.status is distinct from old.status then
-      new.approved_at := now();
-      new.rejected_at := null;
-    elsif new.status = 'Rejected' and new.status is distinct from old.status then
-      new.rejected_at := now();
-      new.approved_at := null;
-    elsif new.status not in ('Approved', 'Rejected') and new.status is distinct from old.status then
-      new.approved_at := null;
-      new.rejected_at := null;
-    end if;
-
     insert into public.luma_submission_status_history (
       submission_id,
       user_id,
@@ -85,14 +101,21 @@ begin
     );
   end if;
 
-  return new;
+  return null;
 end;
 $$;
 
 drop trigger if exists luma_submission_status_tracking on public.luma_submissions;
-create trigger luma_submission_status_tracking
+drop trigger if exists luma_submission_status_prepare on public.luma_submissions;
+drop trigger if exists luma_submission_status_history on public.luma_submissions;
+
+create trigger luma_submission_status_prepare
 before insert or update on public.luma_submissions
-for each row execute function public.track_luma_submission_status();
+for each row execute function public.prepare_luma_submission_status();
+
+create trigger luma_submission_status_history
+after insert or update on public.luma_submissions
+for each row execute function public.record_luma_submission_status_history();
 
 -- Backfill one timeline entry for existing submissions that do not have history yet.
 insert into public.luma_submission_status_history (
