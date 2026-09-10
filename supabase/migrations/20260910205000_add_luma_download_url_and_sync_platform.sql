@@ -1,17 +1,19 @@
+-- Add a direct download URL to Luma submissions and sync approved builds
+-- into store_app_platforms without breaking legacy submissions.
+
 alter table public.luma_submissions
   add column if not exists download_url text;
 
+comment on column public.luma_submissions.download_url is
+  'Direct public download URL for the submitted platform build.';
+
+-- Preserve an existing platform download URL when one already exists.
 update public.luma_submissions s
 set download_url = sap.download_url
 from public.store_apps sa
 join public.store_app_platforms sap on sap.app_id = sa.id
 where sa.luma_submission_id = s.id
   and s.download_url is null;
-
-alter table public.luma_submissions
-  alter column download_url set not null;
-
-comment on column public.luma_submissions.download_url is 'Direct download URL for the submitted platform build.';
 
 create or replace function public.sync_luma_submission_to_store()
 returns trigger
@@ -81,21 +83,29 @@ begin
       updated_at = now()
     returning id into v_store_app_id;
 
-    update public.store_app_platforms
-    set platform = btrim(new.platform),
+    if new.platform is not null
+       and btrim(new.platform) <> ''
+       and new.download_url is not null
+       and btrim(new.download_url) <> '' then
+      update public.store_app_platforms
+      set
+        platform = btrim(new.platform),
         download_url = btrim(new.download_url)
-    where app_id = v_store_app_id;
+      where app_id = v_store_app_id;
 
-    get diagnostics v_platform_rows = row_count;
+      get diagnostics v_platform_rows = row_count;
 
-    if v_platform_rows = 0 then
-      insert into public.store_app_platforms (app_id, platform, download_url)
-      values (v_store_app_id, btrim(new.platform), btrim(new.download_url));
+      if v_platform_rows = 0 then
+        insert into public.store_app_platforms (app_id, platform, download_url)
+        values (v_store_app_id, btrim(new.platform), btrim(new.download_url));
+      end if;
     end if;
   else
     delete from public.store_app_platforms
     where app_id in (
-      select id from public.store_apps where luma_submission_id = new.id
+      select id
+      from public.store_apps
+      where luma_submission_id = new.id
     );
 
     delete from public.store_apps
@@ -106,19 +116,37 @@ begin
 end;
 $$;
 
-revoke all on function public.sync_luma_submission_to_store() from public, anon, authenticated;
+revoke all on function public.sync_luma_submission_to_store()
+  from public, anon, authenticated;
 
-drop trigger if exists luma_submission_store_sync on public.luma_submissions;
+drop trigger if exists luma_submission_store_sync
+  on public.luma_submissions;
+
 create trigger luma_submission_store_sync
-after insert or update of status, name, description, category, user_id, icon_url, version, platform, download_url
+after insert or update of
+  status,
+  name,
+  description,
+  category,
+  user_id,
+  icon_url,
+  version,
+  platform,
+  download_url
 on public.luma_submissions
 for each row
 execute function public.sync_luma_submission_to_store();
 
+-- Backfill existing approved entries that already have a download URL.
 update public.store_app_platforms sap
-set platform = s.platform,
-    download_url = s.download_url
+set
+  platform = s.platform,
+  download_url = s.download_url
 from public.store_apps sa
 join public.luma_submissions s on s.id = sa.luma_submission_id
 where sap.app_id = sa.id
-  and s.status = 'Approved';
+  and s.status = 'Approved'
+  and s.platform is not null
+  and btrim(s.platform) <> ''
+  and s.download_url is not null
+  and btrim(s.download_url) <> '';
