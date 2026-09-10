@@ -11,7 +11,7 @@ interface SubmissionRecord {
 }
 
 interface SupabaseWebhookPayload {
-  type?: string;
+  type?: "INSERT" | "UPDATE" | "DELETE";
   table?: string;
   schema?: string;
   record?: SubmissionRecord;
@@ -29,17 +29,24 @@ export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as SupabaseWebhookPayload;
 
-    if (payload.table !== "luma_submissions" || payload.type !== "UPDATE" || !payload.record) {
+    if (
+      payload.table !== "luma_submissions" ||
+      !payload.record ||
+      !["INSERT", "UPDATE"].includes(payload.type ?? "")
+    ) {
       return NextResponse.json({ ok: true, ignored: true });
     }
 
     const current = payload.record;
-    const previous = payload.old_record;
-    const statusChanged = previous?.status !== current.status;
-    const reviewMessageChanged = previous?.review_message !== current.review_message;
 
-    if (!statusChanged && !reviewMessageChanged) {
-      return NextResponse.json({ ok: true, ignored: true });
+    if (payload.type === "UPDATE") {
+      const previous = payload.old_record;
+      const statusChanged = previous?.status !== current.status;
+      const reviewMessageChanged = previous?.review_message !== current.review_message;
+
+      if (!statusChanged && !reviewMessageChanged) {
+        return NextResponse.json({ ok: true, ignored: true });
+      }
     }
 
     const supabase = createAdminClient();
