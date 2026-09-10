@@ -9,6 +9,8 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
 - **Proxy API**: Seamless integration with backend services
 - **Health Monitoring**: Real-time health checks for API endpoints
 - **Luma Store Developer Portal**: Open-source app submissions with a fully manual review and approval process
+- **Submission Status Timeline**: Developers can see every submission status change and reviewer message
+- **Developer Email Updates**: Developers receive emails when an app is submitted, enters review, is approved, is rejected, or receives a new reviewer message
 - **Luma Store Approved Apps API**: Approved submissions are exposed publicly through `api/luma/apps`
 - **Support Email Notifications**: Every support form message is stored in Supabase and forwarded by email through Resend
 - **Responsive Design**: Mobile-friendly interface with dark theme
@@ -20,7 +22,7 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
 - **TypeScript**: Type-safe development
 - **Tailwind CSS 4**: Utility-first CSS framework
 - **Supabase**: Authentication and application data
-- **Resend**: Transactional support email notifications
+- **Resend**: Transactional email notifications
 
 ## Getting Started
 
@@ -29,7 +31,7 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
 - Node.js 18+
 - npm or yarn
 - Supabase project
-- Resend account for support notifications
+- Resend account for support and developer notifications
 
 ### Installation
 
@@ -45,7 +47,11 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
    ```
    Edit `.env` and configure the values shown below.
 
-4. Run development server:
+4. Apply the Supabase migration in `supabase/migrations/20260910_luma_submission_updates.sql`.
+
+5. Configure the Supabase Database Webhook described below.
+
+6. Run development server:
    ```bash
    npm run dev
    ```
@@ -64,11 +70,15 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 RESEND_API_KEY=re_your_api_key
 EMAIL_FROM=Luma Support <support@your-verified-domain.example>
 EMAIL_NOTIFICATION_TO=FreetimeMaker@proton.me
+
+LUMA_STATUS_WEBHOOK_SECRET=replace-with-a-long-random-secret
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed through a `NEXT_PUBLIC_*` variable.
 
 `EMAIL_FROM` must use a sender/domain accepted by your Resend account. `EMAIL_NOTIFICATION_TO` is the inbox that receives a notification for every support form message.
+
+`LUMA_STATUS_WEBHOOK_SECRET` protects the status notification endpoint. Use a long random value and configure the exact same value as the `x-luma-webhook-secret` header in Supabase.
 
 ## Luma Store publishing
 
@@ -87,6 +97,76 @@ https://api.free-time.me/api/luma/apps
 ```
 
 Pending, In Review and Rejected submissions are not returned by this endpoint. The API includes `publishingMode: "manual-review"` so clients can identify the publishing workflow.
+
+Approved API entries also include public developer information from the submitter account. Private account data such as the developer's login email and user ID are not exposed by the public Store API.
+
+## Developer submission status tracking
+
+Apply:
+
+```text
+supabase/migrations/20260910_luma_submission_updates.sql
+```
+
+The migration adds:
+
+```text
+review_message
+status_updated_at
+approved_at
+rejected_at
+```
+
+to `luma_submissions` and creates `luma_submission_status_history`.
+
+A database trigger records an immutable timeline entry whenever a submission is created, its status changes, or its reviewer message changes. Developers can read only their own timeline through RLS.
+
+The timeline UI is available at:
+
+```text
+/dashboard/developer/status
+```
+
+It shows the current status, last update time, latest reviewer message, and the complete timeline for every submitted app.
+
+### Developer email notifications
+
+Create a Supabase Database Webhook for the table:
+
+```text
+public.luma_submissions
+```
+
+Enable these events:
+
+```text
+INSERT
+UPDATE
+```
+
+Point it to your deployed endpoint:
+
+```text
+POST https://api.free-time.me/api/luma/status-webhook
+```
+
+Add this HTTP header to the webhook:
+
+```text
+x-luma-webhook-secret: <the same value as LUMA_STATUS_WEBHOOK_SECRET>
+```
+
+The webhook sends the developer an email when:
+
+- a new app is submitted (`Pending`)
+- the app moves to `In Review`
+- the app is `Approved`
+- the app is `Rejected`
+- the reviewer message changes
+
+The developer email address is resolved server-side using the submission's `user_id` and the Supabase service-role client. The address is never added to the public Luma Store API.
+
+Reviewer notes can be written to `luma_submissions.review_message`. For rejected submissions this can be used to explain what needs to be fixed before resubmission.
 
 ## Support notifications
 
@@ -111,19 +191,25 @@ The server validates the signed-in user, stores the request in the `support_tick
 ```text
 app/
 ├── api/
-│   ├── luma/apps/     # Public approved Luma Store submissions
-│   ├── support/       # Support ticket + email notification endpoint
-│   ├── health/        # Health endpoint
-│   ├── payment/       # Payment verification
-│   └── proxy/         # API proxy
-├── components/        # React components
-├── dashboard/         # Dashboard pages
-├── auth/              # Auth pages
-└── login/             # Login page
+│   ├── luma/apps/            # Public approved Luma Store submissions
+│   ├── luma/submissions/     # Authenticated developer submission API
+│   ├── luma/status-webhook/  # Supabase status-change email webhook
+│   ├── support/              # Support ticket + email notification endpoint
+│   ├── health/               # Health endpoint
+│   ├── payment/              # Payment verification
+│   └── proxy/                # API proxy
+├── components/               # React components
+├── dashboard/
+│   └── developer/status/     # Developer submission timeline
+├── auth/                     # Auth pages
+└── login/                    # Login page
 
 lib/
-├── email/             # Server-side email provider
-└── supabase/          # Browser, server and admin Supabase clients
+├── email/                    # Server-side Resend email provider
+└── supabase/                 # Browser, server and admin Supabase clients
+
+supabase/
+└── migrations/               # Database migrations for Luma submission tracking
 ```
 
 ## Deployment
@@ -133,7 +219,9 @@ lib/
 1. Push code to GitHub
 2. Import project in Vercel
 3. Configure all values from `.env.example` as environment variables
-4. Deploy
+4. Apply the Supabase migration
+5. Configure the Supabase Database Webhook
+6. Deploy
 
 ### Other Platforms
 
@@ -152,6 +240,9 @@ npm start
 - Supabase authentication is handled through the configured client/server helpers
 - The Supabase service-role key is only used server-side
 - Resend credentials are only used server-side
+- The Luma status webhook is protected by a secret request header
+- Developer email addresses and Supabase user IDs are not exposed in the public Luma Store API
+- Status history is protected with Row Level Security
 - Health checks before API calls
 - Proxy for secure API communication
 - Environment variable configuration
@@ -180,6 +271,16 @@ If a support ticket is stored but no email arrives:
 2. Verify the domain/sender used in `EMAIL_FROM`
 3. Check `EMAIL_NOTIFICATION_TO`
 4. Review the Resend delivery logs
+
+### Developer status email issues
+
+If status changes are visible in Supabase but no developer email arrives:
+1. Confirm the Database Webhook is enabled for both INSERT and UPDATE
+2. Confirm its URL is `/api/luma/status-webhook`
+3. Confirm the `x-luma-webhook-secret` header exactly matches `LUMA_STATUS_WEBHOOK_SECRET`
+4. Check `SUPABASE_SERVICE_ROLE_KEY`
+5. Check `RESEND_API_KEY` and `EMAIL_FROM`
+6. Review the Supabase webhook logs and Resend delivery logs
 
 ## License
 
