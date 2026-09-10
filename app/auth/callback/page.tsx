@@ -39,7 +39,7 @@ function AuthCallbackContent() {
         supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || "",
-        }).then(({ error }) => {
+        }).then(({ error }: { error: any }) => {
           if (error) {
             console.error("Set session error:", error.message);
             router.push("/login?error=" + encodeURIComponent("Authentication failed."));
