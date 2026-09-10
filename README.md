@@ -9,7 +9,7 @@ A modern Next.js frontend for the All API project with OAuth authentication and 
 - **Proxy API**: Seamless integration with backend services
 - **Health Monitoring**: Real-time health checks for API endpoints
 - **Luma Store Developer Portal**: Open-source app submissions with a fully manual review and approval process
-- **Luma Store Approved Apps API**: Approved submissions are exposed publicly through `https://api.free-time.me/v*/lumastore/apps/list`
+- **Luma Store Approved Apps API**: Approved submissions are exposed publicly through `api/luma/apps`
 - **Support Email Notifications**: Every support form message is stored in Supabase and forwarded by email through Resend
 - **Responsive Design**: Mobile-friendly interface with dark theme
 
