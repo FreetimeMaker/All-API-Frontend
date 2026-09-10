@@ -51,15 +51,16 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
     const { data, error } = await supabase.auth.admin.getUserById(current.user_id);
+    const user = data.user;
+    const email = user?.email;
 
-    if (error || !data.user?.email) {
+    if (error || !user || !email) {
       console.error("Could not resolve submission developer:", error);
       return NextResponse.json({ error: "Developer account could not be resolved." }, { status: 404 });
     }
 
-    const user = data.user;
     await sendLumaSubmissionStatusNotification({
-      email: user.email,
+      email,
       developerName: user.user_metadata?.full_name || user.user_metadata?.name || null,
       appName: current.name,
       status: current.status,
