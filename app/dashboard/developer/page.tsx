@@ -223,14 +223,6 @@ export default function LumaDeveloperPortal() {
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">Approved Apps</p>
           <p className="text-2xl font-bold text-white">{loadingApps ? "..." : myApps.filter(a => a.status === 'Approved').length}</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Avg. Review Time</p>
-          <p className="text-2xl font-bold text-white">~2.5d</p>
-        </div>
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Revenue Share</p>
-          <p className="text-2xl font-bold text-emerald-400">0%</p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -471,7 +463,7 @@ export default function LumaDeveloperPortal() {
               Open-Source Policy
             </h2>
             <p className="text-sm text-slate-400 leading-relaxed mb-4">
-              Luma Store is built on the principles of transparency and community. Every application in our ecosystem **must** be Open-Source.
+              Luma Store is built on the principles of transparency and community. Every application in our ecosystem <strong>must</strong> be Open-Source.
             </p>
             <div className="p-3 bg-indigo-900/20 border border-indigo-800/30 rounded-lg">
               <p className="text-xs text-indigo-300 font-medium">Why Open Source?</p>
