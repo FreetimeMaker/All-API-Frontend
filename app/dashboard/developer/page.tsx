@@ -30,6 +30,7 @@ export default function LumaDeveloperPortal() {
   const [appCategory, setAppCategory] = useState("Productivity");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
   const supabase = createClient();
@@ -62,6 +63,28 @@ export default function LumaDeveloperPortal() {
     fetchApps();
   }, [supabase]);
 
+  const resetForm = () => {
+    setStep(1);
+    setAppName("");
+    setAppDescription("");
+    setAppLink("");
+    setAppCategory("Productivity");
+    setEditingId(null);
+  };
+
+  const handleEdit = (app: AppSubmission) => {
+    if (app.status !== "Rejected") return;
+
+    setEditingId(app.id);
+    setAppName(app.name);
+    setAppDescription(app.description);
+    setAppLink(app.link);
+    setAppCategory(app.category);
+    setStep(1);
+    setSubmitted(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -70,41 +93,74 @@ export default function LumaDeveloperPortal() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const newSubmission = {
-        user_id: user.id,
-        name: appName,
-        description: appDescription,
-        link: appLink,
-        category: appCategory,
-        status: "Pending",
-        submitted_at: new Date().toISOString(),
-      };
+      let data: LumaSubmissionRow | null = null;
+      let error: { message?: string } | null = null;
 
-      const { data, error } = await supabase
-        .from("luma_submissions")
-        .insert([newSubmission])
-        .select()
-        .single();
+      if (editingId) {
+        const result = await supabase
+          .from("luma_submissions")
+          .update({
+            name: appName,
+            description: appDescription,
+            link: appLink,
+            category: appCategory,
+            status: "Pending",
+            review_message: null,
+          })
+          .eq("id", editingId)
+          .eq("user_id", user.id)
+          .eq("status", "Rejected")
+          .select()
+          .single();
 
-      if (error) throw error;
+        data = result.data as LumaSubmissionRow | null;
+        error = result.error;
+      } else {
+        const newSubmission = {
+          user_id: user.id,
+          name: appName,
+          description: appDescription,
+          link: appLink,
+          category: appCategory,
+          status: "Pending",
+          submitted_at: new Date().toISOString(),
+        };
 
-      if (data) {
-        setMyApps([ {
-          id: data.id,
-          name: data.name,
-          description: data.description,
-          link: data.link || "",
-          status: data.status,
-          submittedAt: data.submitted_at,
-          category: data.category
-        }, ...myApps]);
+        const result = await supabase
+          .from("luma_submissions")
+          .insert([newSubmission])
+          .select()
+          .single();
+
+        data = result.data as LumaSubmissionRow | null;
+        error = result.error;
       }
 
-      setIsSubmitting(false);
+      if (error) throw error;
+      if (!data) throw new Error("Submission could not be saved");
+
+      const savedApp: AppSubmission = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        link: data.link || "",
+        status: data.status,
+        submittedAt: data.submitted_at,
+        category: data.category
+      };
+
+      if (editingId) {
+        setMyApps((apps) => apps.map((app) => app.id === editingId ? savedApp : app));
+      } else {
+        setMyApps((apps) => [savedApp, ...apps]);
+      }
+
       setSubmitted(true);
+      setEditingId(null);
     } catch (err) {
       console.error("Submission error:", err);
-      alert("Failed to save submission. Check if 'link' column exists in 'luma_submissions' table.");
+      alert("Failed to save submission. Rejected submissions can only be edited while their status is still Rejected.");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -132,7 +188,7 @@ export default function LumaDeveloperPortal() {
           Thank you for submitting <strong>{appName}</strong>. Since it is Open-Source, our team will review the code and get back to you shortly.
         </p>
         <button
-          onClick={() => { setSubmitted(false); setStep(1); setAppName(""); setAppDescription(""); setAppLink(""); }}
+          onClick={() => { setSubmitted(false); resetForm(); }}
           className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors"
         >
           Submit another app
@@ -182,13 +238,19 @@ export default function LumaDeveloperPortal() {
           {/* Submission Form */}
           <section className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
             <div className="bg-slate-800/50 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-              <h2 className="font-semibold text-white">New App Submission</h2>
+              <h2 className="font-semibold text-white">{editingId ? "Edit Rejected Submission" : "New App Submission"}</h2>
               <div className="flex gap-1">
                 {[1, 2, 3].map(i => (
                   <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? "bg-indigo-500" : "bg-slate-700"}`} />
                 ))}
               </div>
             </div>
+
+            {editingId && (
+              <div className="mx-8 mt-6 rounded-lg border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-200">
+                You are editing a rejected submission. Saving it will resubmit the app and set its status back to Pending.
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="p-8">
               {step === 1 && (
@@ -321,7 +383,7 @@ export default function LumaDeveloperPortal() {
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           Verifying...
                         </>
-                      ) : "Confirm & Submit"}
+                      ) : editingId ? "Save & Resubmit" : "Confirm & Submit"}
                     </button>
                     <button
                       type="button"
@@ -381,11 +443,17 @@ export default function LumaDeveloperPortal() {
                         </a>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-medium border border-slate-700 hover:bg-slate-700 transition-colors">
-                        Edit
-                      </button>
-                    </div>
+                    {app.status === "Rejected" && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(app)}
+                          className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-medium border border-slate-700 hover:bg-slate-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
