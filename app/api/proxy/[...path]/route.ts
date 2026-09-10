@@ -30,6 +30,10 @@ const HOP_BY_HOP_HEADERS = [
   "transfer-encoding",
   "upgrade",
   "host",
+  "cross-origin-resource-policy",
+  "cross-origin-opener-policy",
+  "cross-origin-embedder-policy",
+  "content-security-policy",
 ];
 
 async function forward(req: NextRequest, pathArray: string[] | string) {

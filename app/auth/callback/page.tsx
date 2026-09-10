@@ -33,8 +33,20 @@ function AuthCallbackContent() {
       });
     } else {
       const accessToken = searchParams.get("access_token");
+      const refreshToken = searchParams.get("refresh_token");
+
       if (accessToken) {
-        router.push("/dashboard");
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || "",
+        }).then(({ error }) => {
+          if (error) {
+            console.error("Set session error:", error.message);
+            router.push("/login?error=" + encodeURIComponent("Authentication failed."));
+          } else {
+            router.push("/dashboard");
+          }
+        });
       } else {
         router.push("/login?error=" + encodeURIComponent("No authorization code received."));
       }
