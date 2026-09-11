@@ -623,7 +623,7 @@ export default function LumaDeveloperPortal() {
                 <div className="p-6 text-slate-400">No submissions yet.</div>
               ) : (
                 myApps.map((app) => (
-                  <div key={app.id} className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+                  <div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-white">{app.name}</h3>
@@ -633,7 +633,15 @@ export default function LumaDeveloperPortal() {
                       <p className="mt-2 text-xs text-slate-500">{app.category} · {app.version} · {app.screenshots.length} screenshot(s)</p>
                     </div>
                     {(app.status === "Rejected" || app.status === "Approved") && (
-                      <button type="button" onClick={() => beginEdit(app)} className="shrink-0 rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">{app.status === "Approved" ? "Submit update" : "Edit & resubmit"}</button>
+                      <div className="flex justify-start md:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => beginEdit(app)}
+                          className="min-w-[132px] shrink-0 whitespace-nowrap rounded-xl bg-slate-800 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-700"
+                        >
+                          {app.status === "Approved" ? "Submit update" : "Edit & resubmit"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))
