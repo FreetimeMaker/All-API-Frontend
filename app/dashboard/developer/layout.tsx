@@ -16,7 +16,7 @@ export default function DeveloperLayout({ children }: { children: ReactNode }) {
         <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-4 sm:px-5">
           <h2 className="font-semibold text-amber-200">Manual review and publishing</h2>
           <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
-            Every Luma Store submission is reviewed and processed manually. We manually check the public source code,
+            Every Luma Store submission is reviewed and processed manually. I manually check the public source code,
             licensing, app details and publishing requirements before changing its status. Once an app is manually
             marked as Approved, it is automatically exposed through the public Luma Store API at{" "}
             <code className="inline break-all rounded bg-slate-950/60 px-1.5 py-0.5 text-amber-200">/api/luma/apps</code>.
