@@ -3,14 +3,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-interface AppSubmission {
+type SubmissionStatus = "Pending" | "In Review" | "Approved" | "Rejected";
+
+type AppSubmission = {
   id: string;
   name: string;
   description: string;
   link: string;
-  status: "Pending" | "In Review" | "Approved" | "Rejected";
+  status: SubmissionStatus;
   submittedAt: string;
   category: string;
+  subcategory: string;
+  licenseType: string;
   iconUrl: string;
   version: string;
   platform: string;
@@ -18,16 +22,18 @@ interface AppSubmission {
   changelog: string;
   packageName: string;
   versionCode: string;
-}
+};
 
-interface LumaSubmissionRow {
+type LumaSubmissionRow = {
   id: string;
   name: string;
   description: string;
   link: string | null;
-  status: AppSubmission["status"];
+  status: SubmissionStatus;
   submitted_at: string;
   category: string;
+  subcategory: string | null;
+  license_type: string | null;
   icon_url: string | null;
   version: string | null;
   platform: string | null;
@@ -35,7 +41,56 @@ interface LumaSubmissionRow {
   changelog: string | null;
   package_name: string | null;
   version_code: number | string | null;
-}
+};
+
+const CATEGORY_OPTIONS: Record<string, string[]> = {
+  Productivity: ["Office", "Notes & Tasks", "Calendar & Time", "File Management"],
+  Entertainment: ["Streaming", "Podcasts", "Radio"],
+  Utilities: ["System Tools", "Backup & Sync", "Automation", "Calculators & Converters"],
+  Lifestyle: [],
+  "Health & Fitness": ["Fitness", "Nutrition", "Wellbeing"],
+  Games: ["Action", "Adventure", "Arcade", "Puzzle", "Racing", "Role Playing", "Simulation", "Strategy", "Casual"],
+  Development: ["IDEs & Editors", "Git & Version Control", "API & Networking Tools", "Terminal & Shell"],
+  Education: ["Languages", "Mathematics", "Programming", "Study Tools"],
+  Communication: ["Messaging", "Email", "VoIP & Calls"],
+  Internet: ["Browsers", "Download Managers", "Network Tools"],
+  Multimedia: ["Music & Audio", "Video", "Photography", "Graphics & Design"],
+  Finance: ["Budgeting", "Cryptocurrency"],
+  Science: ["Astronomy", "Electronics"],
+  "Navigation & Travel": ["Maps", "Public Transport", "Travel Planning"],
+  "Security & Privacy": ["Password Managers", "Authentication", "Encryption", "Privacy Tools"],
+  Accessibility: [],
+  Customization: ["Launchers", "Themes & Wallpapers"],
+  "Books & Reference": ["E-Books", "Dictionaries"],
+  "News & Weather": ["Weather", "News Readers"],
+  Social: ["Social Networks", "Forums & Communities"],
+};
+
+const LICENSE_OPTIONS = [
+  ["MIT", "MIT License"],
+  ["Apache-2.0", "Apache License 2.0"],
+  ["GPL-2.0-only", "GNU GPL v2 only"],
+  ["GPL-2.0-or-later", "GNU GPL v2 or later"],
+  ["GPL-3.0-only", "GNU GPL v3 only"],
+  ["GPL-3.0-or-later", "GNU GPL v3 or later"],
+  ["LGPL-2.1-only", "GNU LGPL v2.1 only"],
+  ["LGPL-2.1-or-later", "GNU LGPL v2.1 or later"],
+  ["LGPL-3.0-only", "GNU LGPL v3 only"],
+  ["LGPL-3.0-or-later", "GNU LGPL v3 or later"],
+  ["AGPL-3.0-only", "GNU AGPL v3 only"],
+  ["AGPL-3.0-or-later", "GNU AGPL v3 or later"],
+  ["MPL-2.0", "Mozilla Public License 2.0"],
+  ["BSD-2-Clause", "BSD 2-Clause"],
+  ["BSD-3-Clause", "BSD 3-Clause"],
+  ["ISC", "ISC License"],
+  ["Unlicense", "The Unlicense"],
+  ["CC0-1.0", "CC0 1.0"],
+  ["EPL-2.0", "Eclipse Public License 2.0"],
+  ["EUPL-1.2", "European Union Public Licence 1.2"],
+  ["Zlib", "zlib License"],
+  ["BSL-1.0", "Boost Software License 1.0"],
+  ["Artistic-2.0", "Artistic License 2.0"],
+] as const;
 
 export default function LumaDeveloperPortal() {
   const supabase = useMemo(() => createClient(), []);
@@ -44,6 +99,8 @@ export default function LumaDeveloperPortal() {
   const [appDescription, setAppDescription] = useState("");
   const [appLink, setAppLink] = useState("");
   const [appCategory, setAppCategory] = useState("Productivity");
+  const [appSubcategory, setAppSubcategory] = useState("Office");
+  const [appLicenseType, setAppLicenseType] = useState("MIT");
   const [appIconUrl, setAppIconUrl] = useState("");
   const [appVersion, setAppVersion] = useState("");
   const [appPlatform, setAppPlatform] = useState("Android");
@@ -54,10 +111,11 @@ export default function LumaDeveloperPortal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingStatus, setEditingStatus] = useState<AppSubmission["status"] | null>(null);
+  const [editingStatus, setEditingStatus] = useState<SubmissionStatus | null>(null);
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
 
+  const subcategoryOptions = CATEGORY_OPTIONS[appCategory] ?? [];
   const isAndroid = appPlatform === "Android";
   const validAndroidMetadata = !isAndroid || (
     appPackageName.trim().length > 0 &&
@@ -65,6 +123,16 @@ export default function LumaDeveloperPortal() {
     /^\d+$/.test(appVersionCode.trim()) &&
     Number(appVersionCode) > 0
   );
+
+  useEffect(() => {
+    if (subcategoryOptions.length === 0) {
+      if (appSubcategory !== "") setAppSubcategory("");
+      return;
+    }
+    if (!subcategoryOptions.includes(appSubcategory)) {
+      setAppSubcategory(subcategoryOptions[0]);
+    }
+  }, [appCategory, appSubcategory, subcategoryOptions]);
 
   useEffect(() => {
     async function fetchApps() {
@@ -89,6 +157,8 @@ export default function LumaDeveloperPortal() {
           status: item.status,
           submittedAt: item.submitted_at,
           category: item.category,
+          subcategory: item.subcategory || "",
+          licenseType: item.license_type || "",
           iconUrl: item.icon_url || "",
           version: item.version || "",
           platform: item.platform || "",
@@ -111,6 +181,8 @@ export default function LumaDeveloperPortal() {
     setAppDescription("");
     setAppLink("");
     setAppCategory("Productivity");
+    setAppSubcategory("Office");
+    setAppLicenseType("MIT");
     setAppIconUrl("");
     setAppVersion("");
     setAppPlatform("Android");
@@ -131,6 +203,8 @@ export default function LumaDeveloperPortal() {
     setAppDescription(app.description);
     setAppLink(app.link);
     setAppCategory(app.category);
+    setAppSubcategory(app.subcategory);
+    setAppLicenseType(app.licenseType || "MIT");
     setAppIconUrl(app.iconUrl);
     setAppVersion(app.version);
     setAppPlatform(app.platform || "Android");
@@ -154,12 +228,15 @@ export default function LumaDeveloperPortal() {
       if (!user) throw new Error("Not authenticated");
       if (isApprovedUpdate && !appChangelog.trim()) throw new Error("A changelog is required for app updates.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
+      if (!appLicenseType) throw new Error("Please select an open-source license.");
 
       const appMetadata = {
         name: appName.trim(),
         description: appDescription.trim(),
         link: appLink.trim(),
         category: appCategory,
+        subcategory: appSubcategory || null,
+        license_type: appLicenseType,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
         platform: appPlatform,
@@ -217,6 +294,8 @@ export default function LumaDeveloperPortal() {
         status: data.status,
         submittedAt: data.submitted_at,
         category: data.category,
+        subcategory: data.subcategory || "",
+        licenseType: data.license_type || "",
         iconUrl: data.icon_url || "",
         version: data.version || "",
         platform: data.platform || "",
@@ -300,77 +379,102 @@ export default function LumaDeveloperPortal() {
                   <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"><p className="text-sm text-indigo-300">Important: We only accept Open-Source applications.</p></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Application Name</label><input type="text" required value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Short Description</label><textarea rows={4} required value={appDescription} onChange={(e) => setAppDescription(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
+                      <select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">
+                        {Object.keys(CATEGORY_OPTIONS).map((category) => <option key={category} value={category}>{category}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Subcategory</label>
+                      <select disabled={subcategoryOptions.length === 0} value={appSubcategory} onChange={(e) => setAppSubcategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white disabled:opacity-50">
+                        {subcategoryOptions.length === 0 ? <option value="">No subcategory</option> : subcategoryOptions.map((subcategory) => <option key={subcategory} value={subcategory}>{subcategory}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Open-Source License</label>
+                    <select required value={appLicenseType} onChange={(e) => setAppLicenseType(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">
+                      {LICENSE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label} ({value})</option>)}
+                    </select>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label>
                     <input type="url" required value={appIconUrl} onChange={(e) => setAppIconUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
-                    {appIconUrl.trim() && (
-                      <div className="mt-4 flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img key={appIconUrl} src={appIconUrl} alt="App icon preview" className="h-16 w-16 rounded-xl border border-slate-600 bg-slate-900 object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />
-                        <div><p className="text-sm font-medium text-slate-200">Icon preview</p><p className="mt-1 text-xs text-slate-500">Preview of the public icon URL.</p></div>
-                      </div>
-                    )}
                   </div>
-                  <div className="pt-4 flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appDescription.trim() || !appIconUrl.trim()} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">Next Step</button></div>
+
+                  <div className="flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appDescription.trim() || !appLicenseType} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
                 </div>
               )}
 
               {step === 2 && (
                 <div className="space-y-6">
-                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Public Git URL (GitHub / GitLab)</label><input type="url" required value={appLink} onChange={(e) => setAppLink(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 font-mono text-sm" /></div>
-                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e) => setAppDownloadUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 font-mono text-sm" /></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Version Name</label><input type="text" required value={appVersion} onChange={(e) => setAppVersion(e.target.value)} placeholder="e.g. 2.3.0" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Platform</label><select required value={appPlatform} onChange={(e) => setAppPlatform(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"><option value="Android">Android</option><option value="Windows">Windows</option><option value="Linux (debian based)">Linux (debian based)</option><option value="Linux (rpm based)">Linux (rpm based)</option></select></div>
+                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Project / Source URL</label><input type="url" required value={appLink} onChange={(e) => setAppLink(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e) => setAppDownloadUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Version</label><input type="text" required value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Platform</label><select value={appPlatform} onChange={(e) => setAppPlatform(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"><option>Android</option><option>Windows</option><option>Linux</option></select></div>
                   </div>
-
-                  {isAndroid && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Android Package Name</label>
-                        <input type="text" required value={appPackageName} onChange={(e) => setAppPackageName(e.target.value)} placeholder="com.example.app" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" />
-                        <p className="mt-2 text-xs text-slate-500">The applicationId from your Android Gradle configuration.</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Android versionCode</label>
-                        <input type="number" min="1" step="1" required value={appVersionCode} onChange={(e) => setAppVersionCode(e.target.value)} placeholder="42" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500" />
-                        <p className="mt-2 text-xs text-slate-500">Used by Luma Store to determine whether an update is available.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {isApprovedUpdate && <div><label className="block text-sm font-medium text-slate-300 mb-2">Changelog <span className="text-red-400">*</span></label><textarea rows={6} required value={appChangelog} onChange={(e) => setAppChangelog(e.target.value)} placeholder="Describe what changed in this version..." className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /><p className="mt-2 text-xs text-slate-500">Required for updates to an already approved app.</p></div>}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-sm font-medium text-slate-300 mb-2">App Category</label><select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"><option>Productivity</option><option>Entertainment</option><option>Utilities</option><option>Lifestyle</option><option>Health & Fitness</option></select></div><div><label className="block text-sm font-medium text-slate-300 mb-2">License Type</label><select className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"><option>MIT</option><option>Apache 2.0</option><option>GPL v3</option><option>BSD 3-Clause</option><option>Unlicense / Public Domain</option></select></div></div>
-                  <div className="pt-4 flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-8 py-3 text-slate-400 hover:text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">Next Step</button></div>
+                  {isAndroid && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Android Package Name</label><input type="text" required value={appPackageName} onChange={(e) => setAppPackageName(e.target.value)} placeholder="com.example.app" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Android versionCode</label><input type="number" min={1} step={1} required value={appVersionCode} onChange={(e) => setAppVersionCode(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                  </div>}
+                  {isApprovedUpdate && <div><label className="block text-sm font-medium text-slate-300 mb-2">Changelog</label><textarea rows={4} required value={appChangelog} onChange={(e) => setAppChangelog(e.target.value)} placeholder="Describe what changed in this version..." className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>}
+                  <div className="flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-6 text-center py-4">
-                  <h3 className="text-xl font-bold text-white">Verify submission</h3>
-                  <p className="text-slate-400 max-w-md mx-auto">{isApprovedUpdate ? "This update will be sent back to manual review. The currently approved store version remains published until this update is approved." : "By submitting, you confirm that the repository and download URL are public."}</p>
-                  {isAndroid && <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/10 p-4 text-left text-sm"><p><span className="font-semibold text-slate-300">Package:</span> <span className="font-mono text-emerald-300">{appPackageName}</span></p><p className="mt-1"><span className="font-semibold text-slate-300">versionCode:</span> <span className="text-emerald-300">{appVersionCode}</span></p></div>}
-                  {isApprovedUpdate && <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 text-left"><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Changelog</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">{appChangelog}</p></div>}
-                  <div className="flex flex-col gap-3 max-w-xs mx-auto pt-6"><button type="submit" disabled={isSubmitting || !appIconUrl.trim() || !appVersion.trim() || !appPlatform || !appDownloadUrl.trim() || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">{isSubmitting ? "Submitting..." : isApprovedUpdate ? "Submit Update for Review" : editingId ? "Save & Resubmit" : "Confirm & Submit"}</button><button type="button" onClick={() => setStep(2)} className="text-sm text-slate-500 hover:text-slate-300">Wait, check details again</button></div>
+                <div className="space-y-5">
+                  <h3 className="text-xl font-semibold text-white">Review submission</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Category</span><p className="text-white">{appCategory}{appSubcategory ? ` / ${appSubcategory}` : ""}</p></div>
+                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">License</span><p className="text-white">{appLicenseType}</p></div>
+                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Version</span><p className="text-white">{appVersion}</p></div>
+                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Platform</span><p className="text-white">{appPlatform}</p></div>
+                    {isAndroid && <><div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Package</span><p className="text-white break-all">{appPackageName}</p></div><div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">versionCode</span><p className="text-white">{appVersionCode}</p></div></>}
+                  </div>
+                  <div className="flex justify-between"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-40">{isSubmitting ? "Saving..." : isApprovedUpdate ? "Submit update" : "Submit app"}</button></div>
                 </div>
               )}
             </form>
           </section>
 
-          <section className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between"><h2 className="font-semibold text-white">My Open-Source Submissions</h2><span className="text-xs text-slate-500">{myApps.length} Apps</span></div>
-            <div className="divide-y divide-slate-800">
-              {loadingApps ? <div className="p-12 text-center text-slate-500">Connecting to cloud...</div> : myApps.length === 0 ? <div className="p-12 text-center text-slate-500">No submissions yet.</div> : myApps.map((app) => (
-                <div key={app.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-800/30">
-                  <div className="flex gap-4 flex-1 min-w-0">{app.iconUrl && <img src={app.iconUrl} alt={`${app.name} icon`} className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0" />}<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><h3 className="font-bold text-white text-lg">{app.name}</h3><span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="text-sm text-slate-400 mt-1 line-clamp-1">{app.description}</p><div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-500"><span>{app.category}</span><span>Version {app.version || "—"}</span><span>{app.platform || "—"}</span>{app.packageName && <span className="font-mono">{app.packageName}</span>}{app.versionCode && <span>code {app.versionCode}</span>}<a href={app.link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Repository</a>{app.downloadUrl && <a href={app.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Download</a>}</div>{app.changelog && <p className="mt-3 text-xs text-slate-400"><span className="font-semibold text-slate-300">Changelog:</span> {app.changelog}</p>}</div></div>
-                  {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-medium border border-slate-700 hover:bg-slate-700">{app.status === "Approved" ? "Update" : "Edit"}</button>}
+          <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">My submissions</h2>
+            <div className="space-y-3">
+              {myApps.map((app) => (
+                <div key={app.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap"><h3 className="font-semibold text-white truncate">{app.name}</h3><span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(app.status)}`}>{app.status}</span></div>
+                    <p className="text-sm text-slate-400 mt-1">{app.category}{app.subcategory ? ` / ${app.subcategory}` : ""} • {app.licenseType || "No license set"} • {app.version || "No version"}</p>
+                    {app.packageName && <p className="text-xs text-slate-500 mt-1 break-all">{app.packageName}{app.versionCode ? ` • versionCode ${app.versionCode}` : ""}</p>}
+                  </div>
+                  {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 rounded-lg bg-indigo-600 text-white whitespace-nowrap">{app.status === "Approved" ? "Submit update" : "Edit & resubmit"}</button>}
                 </div>
               ))}
+              {!loadingApps && myApps.length === 0 && <p className="text-slate-500">No submissions yet.</p>}
             </div>
           </section>
         </div>
 
-        <div className="lg:col-span-1 space-y-6"><section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm"><h2 className="text-lg font-semibold text-white mb-4">Submission requirements</h2><ul className="space-y-3 text-sm text-slate-400"><li>Public open-source repository</li><li>Public app icon URL</li><li>Current app version</li><li>Target platform</li><li>Direct public download URL</li><li>Android: package name + versionCode</li><li>Changelog required for updates</li><li>Standard open-source license</li></ul></section></div>
+        <aside className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+            <h3 className="font-semibold text-white mb-3">Submission requirements</h3>
+            <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
+              <li>Open-source applications only</li>
+              <li>Select a category and, where available, a subcategory</li>
+              <li>Select an approved open-source license</li>
+              <li>Provide a direct downloadable build URL</li>
+              <li>Android: package name + versionCode</li>
+              <li>Updates require a changelog and another review</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
   );
