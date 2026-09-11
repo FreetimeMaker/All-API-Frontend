@@ -41,6 +41,13 @@ type LumaSubmissionRow = {
   version_code: number | string | null;
 };
 
+type FastlaneMetadata = {
+  description: string;
+  locale: string;
+  branch: string;
+  sourceUrl: string;
+};
+
 const FDROID_CATEGORIES = [
   "AI Chat",
   "App Manager",
@@ -136,11 +143,56 @@ const LICENSE_OPTIONS = [
   ["Artistic-2.0", "Artistic License 2.0"],
 ] as const;
 
+function githubRepository(projectUrl: string): { owner: string; repo: string; branches: string[] } {
+  let parsed: URL;
+  try {
+    parsed = new URL(projectUrl.trim());
+  } catch {
+    throw new Error("Please enter a valid GitHub repository URL.");
+  }
+
+  if (parsed.hostname.toLowerCase() !== "github.com") {
+    throw new Error("Fastlane metadata is currently read from GitHub repositories. Please use a github.com repository URL.");
+  }
+
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  if (parts.length < 2) throw new Error("Please enter the URL of a GitHub repository.");
+
+  const owner = parts[0];
+  const repo = parts[1].replace(/\.git$/i, "");
+  const branchFromUrl = parts[2] === "tree" && parts[3] ? decodeURIComponent(parts[3]) : null;
+  const branches = Array.from(new Set([branchFromUrl, "main", "master"].filter(Boolean))) as string[];
+  return { owner, repo, branches };
+}
+
+async function fetchFastlaneMetadata(projectUrl: string): Promise<FastlaneMetadata> {
+  const { owner, repo, branches } = githubRepository(projectUrl);
+  const locales = ["en-US", "en-GB", "de-DE", "en", "de"];
+
+  for (const branch of branches) {
+    for (const locale of locales) {
+      const sourceUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/fastlane/metadata/android/${locale}/full_description.txt`;
+      try {
+        const response = await fetch(sourceUrl, { cache: "no-store" });
+        if (!response.ok) continue;
+        const description = (await response.text()).trim();
+        if (!description) continue;
+        return { description, locale, branch, sourceUrl };
+      } catch {
+        // Try the next branch/locale combination.
+      }
+    }
+  }
+
+  throw new Error(
+    "No Fastlane full_description.txt was found. Add fastlane/metadata/android/en-US/full_description.txt (or a supported fallback locale) to the repository."
+  );
+}
+
 export default function LumaDeveloperPortal() {
   const supabase = useMemo(() => createClient(), []);
   const [step, setStep] = useState(1);
   const [appName, setAppName] = useState("");
-  const [appDescription, setAppDescription] = useState("");
   const [appLink, setAppLink] = useState("");
   const [appCategory, setAppCategory] = useState<string>("System");
   const [appLicenseType, setAppLicenseType] = useState("MIT");
@@ -151,6 +203,9 @@ export default function LumaDeveloperPortal() {
   const [appChangelog, setAppChangelog] = useState("");
   const [appPackageName, setAppPackageName] = useState("");
   const [appVersionCode, setAppVersionCode] = useState("");
+  const [fastlaneMetadata, setFastlaneMetadata] = useState<FastlaneMetadata | null>(null);
+  const [fastlaneError, setFastlaneError] = useState<string | null>(null);
+  const [fastlaneLoading, setFastlaneLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -209,7 +264,6 @@ export default function LumaDeveloperPortal() {
   const resetForm = () => {
     setStep(1);
     setAppName("");
-    setAppDescription("");
     setAppLink("");
     setAppCategory("System");
     setAppLicenseType("MIT");
@@ -220,6 +274,9 @@ export default function LumaDeveloperPortal() {
     setAppChangelog("");
     setAppPackageName("");
     setAppVersionCode("");
+    setFastlaneMetadata(null);
+    setFastlaneError(null);
+    setFastlaneLoading(false);
     setEditingId(null);
     setEditingStatus(null);
   };
@@ -230,7 +287,6 @@ export default function LumaDeveloperPortal() {
     setEditingId(app.id);
     setEditingStatus(app.status);
     setAppName(app.name);
-    setAppDescription(app.description);
     setAppLink(app.link);
     setAppCategory(FDROID_CATEGORIES.includes(app.category as typeof FDROID_CATEGORIES[number]) ? app.category : "System");
     setAppLicenseType(app.licenseType || "MIT");
@@ -241,9 +297,25 @@ export default function LumaDeveloperPortal() {
     setAppChangelog("");
     setAppPackageName(app.packageName);
     setAppVersionCode(app.versionCode);
+    setFastlaneMetadata(null);
+    setFastlaneError(null);
     setStep(1);
     setSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const verifyFastlane = async () => {
+    setFastlaneLoading(true);
+    setFastlaneError(null);
+    setFastlaneMetadata(null);
+    try {
+      const metadata = await fetchFastlaneMetadata(appLink);
+      setFastlaneMetadata(metadata);
+    } catch (error) {
+      setFastlaneError(error instanceof Error ? error.message : "Fastlane metadata could not be loaded.");
+    } finally {
+      setFastlaneLoading(false);
+    }
   };
 
   const isApprovedUpdate = editingStatus === "Approved";
@@ -260,9 +332,14 @@ export default function LumaDeveloperPortal() {
       if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
 
+      // Fastlane is mandatory. Re-read it immediately before saving so the submitted
+      // description can never come from a manually edited form value.
+      const currentFastlaneMetadata = await fetchFastlaneMetadata(appLink.trim());
+      setFastlaneMetadata(currentFastlaneMetadata);
+
       const appMetadata = {
         name: appName.trim(),
-        description: appDescription.trim(),
+        description: currentFastlaneMetadata.description,
         link: appLink.trim(),
         category: appCategory,
         subcategory: null,
@@ -343,8 +420,8 @@ export default function LumaDeveloperPortal() {
       setEditingStatus(null);
     } catch (err) {
       console.error("Submission error:", err);
-      const e = err as { message?: string; code?: string; details?: string; hint?: string };
-      const details = [e.message, e.code, e.details, e.hint].filter(Boolean).join(" | ");
+      const error = err as { message?: string; code?: string; details?: string; hint?: string };
+      const details = [error.message, error.code, error.details, error.hint].filter(Boolean).join(" | ");
       alert(`Failed to save submission${details ? `: ${details}` : "."}`);
     } finally {
       setIsSubmitting(false);
@@ -403,9 +480,8 @@ export default function LumaDeveloperPortal() {
             <form onSubmit={handleSubmit} className="p-8">
               {step === 1 && (
                 <div className="space-y-6">
-                  <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"><p className="text-sm text-indigo-300">Important: We only accept Open-Source applications.</p></div>
+                  <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"><p className="text-sm text-indigo-300">Important: We only accept Open-Source applications. Fastlane metadata is required and provides the app description.</p></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Application Name</label><input type="text" required value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
-                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Short Description</label><textarea rows={4} required value={appDescription} onChange={(e) => setAppDescription(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
 
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">F-Droid Category</label>
@@ -436,13 +512,38 @@ export default function LumaDeveloperPortal() {
                     )}
                   </div>
 
-                  <div className="flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appDescription.trim() || !appLicenseType} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
+                  <div className="flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appLicenseType} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
                 </div>
               )}
 
               {step === 2 && (
                 <div className="space-y-6">
-                  <div><label className="block text-sm font-medium text-slate-300 mb-2">Project / Source URL</label><input type="url" required value={appLink} onChange={(e) => setAppLink(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">GitHub Project / Source URL</label>
+                    <input
+                      type="url"
+                      required
+                      value={appLink}
+                      onChange={(e) => {
+                        setAppLink(e.target.value);
+                        setFastlaneMetadata(null);
+                        setFastlaneError(null);
+                      }}
+                      placeholder="https://github.com/owner/repository"
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">Required: fastlane/metadata/android/en-US/full_description.txt. Fallback locales en-GB, de-DE, en and de are also accepted.</p>
+                    <button type="button" onClick={verifyFastlane} disabled={!appLink.trim() || fastlaneLoading} className="mt-3 px-4 py-2 rounded-lg bg-slate-700 text-white disabled:opacity-40 hover:bg-slate-600">
+                      {fastlaneLoading ? "Checking Fastlane..." : "Check Fastlane metadata"}
+                    </button>
+                    {fastlaneError && <p className="mt-3 text-sm text-red-400">{fastlaneError}</p>}
+                    {fastlaneMetadata && (
+                      <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4">
+                        <p className="text-sm font-semibold text-emerald-300">Fastlane metadata found · {fastlaneMetadata.locale} · {fastlaneMetadata.branch}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-300 max-h-40 overflow-y-auto">{fastlaneMetadata.description}</p>
+                      </div>
+                    )}
+                  </div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e) => setAppDownloadUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label className="block text-sm font-medium text-slate-300 mb-2">Version</label><input type="text" required value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
@@ -453,7 +554,7 @@ export default function LumaDeveloperPortal() {
                     <div><label className="block text-sm font-medium text-slate-300 mb-2">Android versionCode</label><input type="number" min={1} step={1} required value={appVersionCode} onChange={(e) => setAppVersionCode(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>
                   </div>}
                   {isApprovedUpdate && <div><label className="block text-sm font-medium text-slate-300 mb-2">Changelog</label><textarea rows={4} required value={appChangelog} onChange={(e) => setAppChangelog(e.target.value)} placeholder="Describe what changed in this version..." className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" /></div>}
-                  <div className="flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
+                  <div className="flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !fastlaneMetadata || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
                 </div>
               )}
 
@@ -465,9 +566,10 @@ export default function LumaDeveloperPortal() {
                     <p><span className="text-slate-400">License:</span> <span className="text-white">{appLicenseType}</span></p>
                     <p><span className="text-slate-400">Version:</span> <span className="text-white">{appVersion}</span></p>
                     <p><span className="text-slate-400">Platform:</span> <span className="text-white">{appPlatform}</span></p>
+                    <p><span className="text-slate-400">Description:</span> <span className="text-white">Fastlane {fastlaneMetadata?.locale || "metadata"}</span></p>
                     {isAndroid && <p><span className="text-slate-400">Android:</span> <span className="text-white">{appPackageName} · versionCode {appVersionCode}</span></p>}
                   </div>
-                  <div className="flex justify-between"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-40">{isSubmitting ? "Saving..." : isApprovedUpdate ? "Submit Update" : "Submit App"}</button></div>
+                  <div className="flex justify-between"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="submit" disabled={isSubmitting || !fastlaneMetadata} className="px-5 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-40">{isSubmitting ? "Saving..." : isApprovedUpdate ? "Submit Update" : "Submit App"}</button></div>
                 </div>
               )}
             </form>
@@ -498,6 +600,8 @@ export default function LumaDeveloperPortal() {
             <h3 className="font-semibold text-white mb-3">Submission requirements</h3>
             <ul className="space-y-2 text-sm text-slate-400 list-disc pl-5">
               <li>Open-source application</li>
+              <li>GitHub repository with Fastlane metadata</li>
+              <li>Fastlane full_description.txt is used as the store description</li>
               <li>Valid project and download URLs</li>
               <li>F-Droid category and open-source license</li>
               <li>Android: package name + versionCode</li>
