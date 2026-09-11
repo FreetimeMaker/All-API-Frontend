@@ -268,8 +268,8 @@ export default function LumaDeveloperPortal() {
     setStep(1);
     setAppName("");
     setAppLink("");
-    setAppCategory("System");
-    setAppLicenseType("MIT");
+    setAppCategory("");
+    setAppLicenseType("");
     setAppIconUrl("");
     setIconPreviewError(false);
     setAppVersion("");
