@@ -405,6 +405,24 @@ export default function LumaDeveloperPortal() {
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label>
                     <input type="url" required value={appIconUrl} onChange={(e) => setAppIconUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
+                    {appIconUrl.trim() && (
+                      <div className="mt-4 flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          key={appIconUrl}
+                          src={appIconUrl}
+                          alt="App icon preview"
+                          className="h-20 w-20 shrink-0 rounded-2xl border border-slate-600 bg-slate-900 object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white">App Icon Preview</p>
+                          <p className="mt-1 break-all text-xs text-slate-400">{appIconUrl}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appDescription.trim() || !appLicenseType} className="px-5 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40">Next</button></div>
@@ -429,49 +447,50 @@ export default function LumaDeveloperPortal() {
               )}
 
               {step === 3 && (
-                <div className="space-y-5">
-                  <h3 className="text-xl font-semibold text-white">Review submission</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Category</span><p className="text-white">{appCategory}{appSubcategory ? ` / ${appSubcategory}` : ""}</p></div>
-                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">License</span><p className="text-white">{appLicenseType}</p></div>
-                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Version</span><p className="text-white">{appVersion}</p></div>
-                    <div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Platform</span><p className="text-white">{appPlatform}</p></div>
-                    {isAndroid && <><div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">Package</span><p className="text-white break-all">{appPackageName}</p></div><div className="rounded-lg bg-slate-800 p-4"><span className="text-slate-500">versionCode</span><p className="text-white">{appVersionCode}</p></div></>}
+                <div className="space-y-6">
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-5 space-y-3 text-sm">
+                    <p><span className="text-slate-400">Name:</span> <span className="text-white">{appName}</span></p>
+                    <p><span className="text-slate-400">Category:</span> <span className="text-white">{appCategory}{appSubcategory ? ` / ${appSubcategory}` : ""}</span></p>
+                    <p><span className="text-slate-400">License:</span> <span className="text-white">{appLicenseType}</span></p>
+                    <p><span className="text-slate-400">Version:</span> <span className="text-white">{appVersion}</span></p>
+                    <p><span className="text-slate-400">Platform:</span> <span className="text-white">{appPlatform}</span></p>
+                    {isAndroid && <p><span className="text-slate-400">Android:</span> <span className="text-white">{appPackageName} · versionCode {appVersionCode}</span></p>}
                   </div>
-                  <div className="flex justify-between"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-40">{isSubmitting ? "Saving..." : isApprovedUpdate ? "Submit update" : "Submit app"}</button></div>
+                  <div className="flex justify-between"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-slate-800 text-white">Back</button><button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-40">{isSubmitting ? "Saving..." : isApprovedUpdate ? "Submit Update" : "Submit App"}</button></div>
                 </div>
               )}
             </form>
           </section>
 
-          <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">My submissions</h2>
-            <div className="space-y-3">
-              {myApps.map((app) => (
-                <div key={app.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <section className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-800"><h2 className="font-semibold text-white">My submissions</h2></div>
+            <div className="divide-y divide-slate-800">
+              {loadingApps ? <div className="p-6 text-slate-400">Loading...</div> : myApps.length === 0 ? <div className="p-6 text-slate-400">No submissions yet.</div> : myApps.map((app) => (
+                <div key={app.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap"><h3 className="font-semibold text-white truncate">{app.name}</h3><span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(app.status)}`}>{app.status}</span></div>
-                    <p className="text-sm text-slate-400 mt-1">{app.category}{app.subcategory ? ` / ${app.subcategory}` : ""} • {app.licenseType || "No license set"} • {app.version || "No version"}</p>
-                    {app.packageName && <p className="text-xs text-slate-500 mt-1 break-all">{app.packageName}{app.versionCode ? ` • versionCode ${app.versionCode}` : ""}</p>}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-white">{app.name}</h3>
+                      <span className={`px-2 py-0.5 rounded-full border text-xs ${getStatusColor(app.status)}`}>{app.status}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-400">{app.category}{app.subcategory ? ` / ${app.subcategory}` : ""} · {app.licenseType || "No license"} · {app.version || "No version"}</p>
+                    {app.packageName && <p className="mt-1 text-xs text-slate-500">{app.packageName}{app.versionCode ? ` · versionCode ${app.versionCode}` : ""}</p>}
                   </div>
-                  {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 rounded-lg bg-indigo-600 text-white whitespace-nowrap">{app.status === "Approved" ? "Submit update" : "Edit & resubmit"}</button>}
+                  {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">{app.status === "Approved" ? "Submit update" : "Edit & resubmit"}</button>}
                 </div>
               ))}
-              {!loadingApps && myApps.length === 0 && <p className="text-slate-500">No submissions yet.</p>}
             </div>
           </section>
         </div>
 
-        <aside className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <aside className="space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="font-semibold text-white mb-3">Submission requirements</h3>
-            <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
-              <li>Open-source applications only</li>
-              <li>Select a category and, where available, a subcategory</li>
-              <li>Select an approved open-source license</li>
-              <li>Provide a direct downloadable build URL</li>
+            <ul className="space-y-2 text-sm text-slate-400 list-disc pl-5">
+              <li>Open-source application</li>
+              <li>Valid project and download URLs</li>
+              <li>Category, optional subcategory and license</li>
               <li>Android: package name + versionCode</li>
-              <li>Updates require a changelog and another review</li>
+              <li>Updates require a changelog</li>
             </ul>
           </div>
         </aside>
