@@ -204,6 +204,7 @@ export default function LumaDeveloperPortal() {
   const [fastlaneMetadata, setFastlaneMetadata] = useState<FastlaneMetadata | null>(null);
   const [fastlaneError, setFastlaneError] = useState<string | null>(null);
   const [fastlaneLoading, setFastlaneLoading] = useState(false);
+  const [submitterConfirmed, setSubmitterConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -278,6 +279,7 @@ export default function LumaDeveloperPortal() {
     setAppVersionCode("");
     setFastlaneMetadata(null);
     setFastlaneError(null);
+    setSubmitterConfirmed(false);
     setEditingId(null);
     setEditingStatus(null);
   };
@@ -299,6 +301,7 @@ export default function LumaDeveloperPortal() {
     setAppVersionCode(app.versionCode);
     setFastlaneMetadata(null);
     setFastlaneError(null);
+    setSubmitterConfirmed(false);
     setStep(1);
     setSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -329,6 +332,7 @@ export default function LumaDeveloperPortal() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      if (!submitterConfirmed) throw new Error("Please confirm that you are the developer/authorized maintainer and that you emailed FreetimeMaker@proton.me about this submission.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
@@ -585,7 +589,7 @@ export default function LumaDeveloperPortal() {
 
                   <div className="flex justify-between">
                     <button type="button" onClick={() => setStep(1)} className="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white transition hover:bg-slate-700">Back</button>
-                    <button type="button" onClick={() => setStep(3)} disabled={!fastlaneMetadata || !appDownloadUrl.trim() || !appVersion.trim() || !validAndroidMetadata} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+                    <button type="button" onClick={() => { setSubmitterConfirmed(false); setStep(3); }} disabled={!fastlaneMetadata || !appDownloadUrl.trim() || !appVersion.trim() || !validAndroidMetadata} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
                   </div>
                 </div>
               )}
@@ -603,9 +607,27 @@ export default function LumaDeveloperPortal() {
                     </dl>
                   </div>
 
+                  <div className="rounded-2xl border border-amber-500/25 bg-amber-950/15 p-5">
+                    <h3 className="font-semibold text-amber-200">Developer verification required</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      Only the developer or an authorized maintainer of the app may submit it. Before submitting, send an email to <strong className="text-white">FreetimeMaker@proton.me</strong>, clearly name the app and state that you submitted it to Luma Store. This email is used to help verify the submission.
+                    </p>
+                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                      <input
+                        type="checkbox"
+                        checked={submitterConfirmed}
+                        onChange={(e) => setSubmitterConfirmed(e.target.checked)}
+                        className="mt-1 h-4 w-4 shrink-0 accent-indigo-500"
+                      />
+                      <span className="text-sm leading-6 text-slate-300">
+                        I confirm that I am the developer or an authorized maintainer of this app, and that I have emailed <strong className="text-white">FreetimeMaker@proton.me</strong> with the app name and stated that I submitted the app to Luma Store.
+                      </span>
+                    </label>
+                  </div>
+
                   <div className="flex justify-between">
                     <button type="button" onClick={() => setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white transition hover:bg-slate-700">Back</button>
-                    <button type="submit" disabled={isSubmitting || !fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">{isSubmitting ? "Saving…" : isApprovedUpdate ? "Submit Update" : "Submit App"}</button>
+                    <button type="submit" disabled={isSubmitting || !fastlaneMetadata || !submitterConfirmed} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">{isSubmitting ? "Saving…" : isApprovedUpdate ? "Submit Update" : "Submit App"}</button>
                   </div>
                 </div>
               )}
@@ -662,8 +684,12 @@ export default function LumaDeveloperPortal() {
             </ul>
           </div>
           <div className={`${cardClass} p-5`}>
+            <h3 className="font-semibold text-white">Developer verification</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">The submitter must be the app developer or an authorized maintainer. An email must also be sent to <span className="break-all text-slate-200">FreetimeMaker@proton.me</span> naming the app and confirming that it was submitted to Luma Store.</p>
+          </div>
+          <div className={`${cardClass} p-5`}>
             <h3 className="font-semibold text-white">Category source</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">The dropdown now uses the current F-Droid metadata category set, including the newer game-specific and utility categories.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">The dropdown uses the current F-Droid metadata category set, including the newer game-specific and utility categories.</p>
           </div>
         </aside>
       </div>
