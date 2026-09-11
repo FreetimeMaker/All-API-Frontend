@@ -1,7 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navItems = [
   { name: "Overview", href: "/dashboard", icon: "📊" },
@@ -20,7 +22,11 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [apiUp, setApiUp] = useState<boolean | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     fetch("/api/health")
@@ -28,6 +34,39 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       .then(d => setApiUp(d.ok === true))
       .catch(() => setApiUp(false));
   }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await supabase.auth.signOut();
+      onMobileClose?.();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "User";
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const initials = String(name)
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   const navContent = (
     <>
@@ -78,6 +117,40 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     </>
   );
 
+  const mobileAccount = user && (
+    <div className="border-t border-slate-800 p-3 sm:p-4 md:hidden">
+      <Link
+        href="/dashboard/profile"
+        onClick={onMobileClose}
+        className="flex min-h-14 items-center gap-3 rounded-xl border border-slate-700 bg-slate-800/70 p-3 transition-colors hover:bg-slate-800 active:bg-slate-700"
+      >
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={`${name} profile`} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-slate-200">
+            {initials || "U"}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-100">{name}</p>
+          <p className="truncate text-xs text-slate-400">View profile</p>
+        </div>
+        <span className="text-slate-500" aria-hidden="true">›</span>
+      </Link>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-800/60 bg-red-950/40 px-4 py-2.5 text-sm font-semibold text-red-300 transition-colors hover:bg-red-900/50 active:bg-red-900/70 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span aria-hidden="true">↪</span>
+        {loggingOut ? "Logging out…" : "Logout"}
+      </button>
+    </div>
+  );
+
   return (
     <>
       <aside className="hidden min-h-[calc(100vh-64px)] w-64 flex-col border-r border-slate-800 bg-slate-900 md:flex">
@@ -107,6 +180,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
               </button>
             </div>
             {navContent}
+            {mobileAccount}
           </aside>
         </div>
       )}
