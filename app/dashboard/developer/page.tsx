@@ -275,7 +275,28 @@ export default function LumaDeveloperPortal() {
                   <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"><p className="text-sm text-indigo-300">Important: We only accept Open-Source applications.</p></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Application Name</label><input type="text" required value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Short Description</label><textarea rows={4} required value={appDescription} onChange={(e) => setAppDescription(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
-                  <div><label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label><input type="url" required value={appIconUrl} onChange={(e) => setAppIconUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label>
+                    <input type="url" required value={appIconUrl} onChange={(e) => setAppIconUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
+                    {appIconUrl.trim() && (
+                      <div className="mt-4 flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          key={appIconUrl}
+                          src={appIconUrl}
+                          alt="App icon preview"
+                          className="h-16 w-16 rounded-xl border border-slate-600 bg-slate-900 object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">Icon preview</p>
+                          <p className="mt-1 text-xs text-slate-500">Preview of the public icon URL.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="pt-4 flex justify-end"><button type="button" onClick={() => setStep(2)} disabled={!appName.trim() || !appDescription.trim() || !appIconUrl.trim()} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">Next Step</button></div>
                 </div>
               )}
