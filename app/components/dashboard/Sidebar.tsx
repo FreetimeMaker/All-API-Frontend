@@ -12,7 +12,6 @@ const navItems = [
   { name: "Profile", href: "/dashboard/profile", icon: "👤" },
   { name: "Settings", href: "/dashboard/settings", icon: "⚙️" },
   { name: "Support", href: "/dashboard/support", icon: "💬" },
-  { name: "Developer Portal", href: "/dashboard/developer", icon: "🛠️" },
 ];
 
 interface SidebarProps {
