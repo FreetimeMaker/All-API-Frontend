@@ -16,6 +16,8 @@ interface AppSubmission {
   platform: string;
   downloadUrl: string;
   changelog: string;
+  packageName: string;
+  versionCode: string;
 }
 
 interface LumaSubmissionRow {
@@ -31,6 +33,8 @@ interface LumaSubmissionRow {
   platform: string | null;
   download_url: string | null;
   changelog: string | null;
+  package_name: string | null;
+  version_code: number | string | null;
 }
 
 export default function LumaDeveloperPortal() {
@@ -45,12 +49,22 @@ export default function LumaDeveloperPortal() {
   const [appPlatform, setAppPlatform] = useState("Android");
   const [appDownloadUrl, setAppDownloadUrl] = useState("");
   const [appChangelog, setAppChangelog] = useState("");
+  const [appPackageName, setAppPackageName] = useState("");
+  const [appVersionCode, setAppVersionCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState<AppSubmission["status"] | null>(null);
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
+
+  const isAndroid = appPlatform === "Android";
+  const validAndroidMetadata = !isAndroid || (
+    appPackageName.trim().length > 0 &&
+    /^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) &&
+    /^\d+$/.test(appVersionCode.trim()) &&
+    Number(appVersionCode) > 0
+  );
 
   useEffect(() => {
     async function fetchApps() {
@@ -80,6 +94,8 @@ export default function LumaDeveloperPortal() {
           platform: item.platform || "",
           downloadUrl: item.download_url || "",
           changelog: item.changelog || "",
+          packageName: item.package_name || "",
+          versionCode: item.version_code == null ? "" : String(item.version_code),
         })));
       }
 
@@ -100,6 +116,8 @@ export default function LumaDeveloperPortal() {
     setAppPlatform("Android");
     setAppDownloadUrl("");
     setAppChangelog("");
+    setAppPackageName("");
+    setAppVersionCode("");
     setEditingId(null);
     setEditingStatus(null);
   };
@@ -118,6 +136,8 @@ export default function LumaDeveloperPortal() {
     setAppPlatform(app.platform || "Android");
     setAppDownloadUrl(app.downloadUrl);
     setAppChangelog("");
+    setAppPackageName(app.packageName);
+    setAppVersionCode(app.versionCode);
     setStep(1);
     setSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -133,6 +153,7 @@ export default function LumaDeveloperPortal() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       if (isApprovedUpdate && !appChangelog.trim()) throw new Error("A changelog is required for app updates.");
+      if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
 
       const appMetadata = {
         name: appName.trim(),
@@ -144,6 +165,8 @@ export default function LumaDeveloperPortal() {
         platform: appPlatform,
         download_url: appDownloadUrl.trim(),
         changelog: appChangelog.trim() || null,
+        package_name: isAndroid ? appPackageName.trim() : null,
+        version_code: isAndroid ? Number(appVersionCode) : null,
       };
 
       let data: LumaSubmissionRow | null = null;
@@ -199,6 +222,8 @@ export default function LumaDeveloperPortal() {
         platform: data.platform || "",
         downloadUrl: data.download_url || "",
         changelog: data.changelog || "",
+        packageName: data.package_name || "",
+        versionCode: data.version_code == null ? "" : String(data.version_code),
       };
 
       if (editingId) {
@@ -281,19 +306,8 @@ export default function LumaDeveloperPortal() {
                     {appIconUrl.trim() && (
                       <div className="mt-4 flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          key={appIconUrl}
-                          src={appIconUrl}
-                          alt="App icon preview"
-                          className="h-16 w-16 rounded-xl border border-slate-600 bg-slate-900 object-cover"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-slate-200">Icon preview</p>
-                          <p className="mt-1 text-xs text-slate-500">Preview of the public icon URL.</p>
-                        </div>
+                        <img key={appIconUrl} src={appIconUrl} alt="App icon preview" className="h-16 w-16 rounded-xl border border-slate-600 bg-slate-900 object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                        <div><p className="text-sm font-medium text-slate-200">Icon preview</p><p className="mt-1 text-xs text-slate-500">Preview of the public icon URL.</p></div>
                       </div>
                     )}
                   </div>
@@ -306,12 +320,28 @@ export default function LumaDeveloperPortal() {
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Public Git URL (GitHub / GitLab)</label><input type="url" required value={appLink} onChange={(e) => setAppLink(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 font-mono text-sm" /></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e) => setAppDownloadUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 font-mono text-sm" /></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Version</label><input type="text" required value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
+                    <div><label className="block text-sm font-medium text-slate-300 mb-2">Version Name</label><input type="text" required value={appVersion} onChange={(e) => setAppVersion(e.target.value)} placeholder="e.g. 2.3.0" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
                     <div><label className="block text-sm font-medium text-slate-300 mb-2">Platform</label><select required value={appPlatform} onChange={(e) => setAppPlatform(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"><option value="Android">Android</option><option value="Windows">Windows</option><option value="Linux (debian based)">Linux (debian based)</option><option value="Linux (rpm based)">Linux (rpm based)</option></select></div>
                   </div>
+
+                  {isAndroid && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Android Package Name</label>
+                        <input type="text" required value={appPackageName} onChange={(e) => setAppPackageName(e.target.value)} placeholder="com.example.app" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" />
+                        <p className="mt-2 text-xs text-slate-500">The applicationId from your Android Gradle configuration.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Android versionCode</label>
+                        <input type="number" min="1" step="1" required value={appVersionCode} onChange={(e) => setAppVersionCode(e.target.value)} placeholder="42" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500" />
+                        <p className="mt-2 text-xs text-slate-500">Used by Luma Store to determine whether an update is available.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {isApprovedUpdate && <div><label className="block text-sm font-medium text-slate-300 mb-2">Changelog <span className="text-red-400">*</span></label><textarea rows={6} required value={appChangelog} onChange={(e) => setAppChangelog(e.target.value)} placeholder="Describe what changed in this version..." className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /><p className="mt-2 text-xs text-slate-500">Required for updates to an already approved app.</p></div>}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-sm font-medium text-slate-300 mb-2">App Category</label><select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"><option>Productivity</option><option>Entertainment</option><option>Utilities</option><option>Lifestyle</option><option>Health & Fitness</option></select></div><div><label className="block text-sm font-medium text-slate-300 mb-2">License Type</label><select className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"><option>MIT</option><option>Apache 2.0</option><option>GPL v3</option><option>BSD 3-Clause</option><option>Unlicense / Public Domain</option></select></div></div>
-                  <div className="pt-4 flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-8 py-3 text-slate-400 hover:text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || (isApprovedUpdate && !appChangelog.trim())} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">Next Step</button></div>
+                  <div className="pt-4 flex justify-between"><button type="button" onClick={() => setStep(1)} className="px-8 py-3 text-slate-400 hover:text-white">Back</button><button type="button" onClick={() => setStep(3)} disabled={!appLink.trim() || !appDownloadUrl.trim() || !appVersion.trim() || !appPlatform || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">Next Step</button></div>
                 </div>
               )}
 
@@ -319,8 +349,9 @@ export default function LumaDeveloperPortal() {
                 <div className="space-y-6 text-center py-4">
                   <h3 className="text-xl font-bold text-white">Verify submission</h3>
                   <p className="text-slate-400 max-w-md mx-auto">{isApprovedUpdate ? "This update will be sent back to manual review. The currently approved store version remains published until this update is approved." : "By submitting, you confirm that the repository and download URL are public."}</p>
+                  {isAndroid && <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/10 p-4 text-left text-sm"><p><span className="font-semibold text-slate-300">Package:</span> <span className="font-mono text-emerald-300">{appPackageName}</span></p><p className="mt-1"><span className="font-semibold text-slate-300">versionCode:</span> <span className="text-emerald-300">{appVersionCode}</span></p></div>}
                   {isApprovedUpdate && <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 text-left"><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Changelog</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">{appChangelog}</p></div>}
-                  <div className="flex flex-col gap-3 max-w-xs mx-auto pt-6"><button type="submit" disabled={isSubmitting || !appIconUrl.trim() || !appVersion.trim() || !appPlatform || !appDownloadUrl.trim() || (isApprovedUpdate && !appChangelog.trim())} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">{isSubmitting ? "Submitting..." : isApprovedUpdate ? "Submit Update for Review" : editingId ? "Save & Resubmit" : "Confirm & Submit"}</button><button type="button" onClick={() => setStep(2)} className="text-sm text-slate-500 hover:text-slate-300">Wait, check details again</button></div>
+                  <div className="flex flex-col gap-3 max-w-xs mx-auto pt-6"><button type="submit" disabled={isSubmitting || !appIconUrl.trim() || !appVersion.trim() || !appPlatform || !appDownloadUrl.trim() || !validAndroidMetadata || (isApprovedUpdate && !appChangelog.trim())} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">{isSubmitting ? "Submitting..." : isApprovedUpdate ? "Submit Update for Review" : editingId ? "Save & Resubmit" : "Confirm & Submit"}</button><button type="button" onClick={() => setStep(2)} className="text-sm text-slate-500 hover:text-slate-300">Wait, check details again</button></div>
                 </div>
               )}
             </form>
@@ -331,7 +362,7 @@ export default function LumaDeveloperPortal() {
             <div className="divide-y divide-slate-800">
               {loadingApps ? <div className="p-12 text-center text-slate-500">Connecting to cloud...</div> : myApps.length === 0 ? <div className="p-12 text-center text-slate-500">No submissions yet.</div> : myApps.map((app) => (
                 <div key={app.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-800/30">
-                  <div className="flex gap-4 flex-1 min-w-0">{app.iconUrl && <img src={app.iconUrl} alt={`${app.name} icon`} className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0" />}<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><h3 className="font-bold text-white text-lg">{app.name}</h3><span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="text-sm text-slate-400 mt-1 line-clamp-1">{app.description}</p><div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-500"><span>{app.category}</span><span>Version {app.version || "—"}</span><span>{app.platform || "—"}</span><a href={app.link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Repository</a>{app.downloadUrl && <a href={app.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Download</a>}</div>{app.changelog && <p className="mt-3 text-xs text-slate-400"><span className="font-semibold text-slate-300">Changelog:</span> {app.changelog}</p>}</div></div>
+                  <div className="flex gap-4 flex-1 min-w-0">{app.iconUrl && <img src={app.iconUrl} alt={`${app.name} icon`} className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0" />}<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><h3 className="font-bold text-white text-lg">{app.name}</h3><span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="text-sm text-slate-400 mt-1 line-clamp-1">{app.description}</p><div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-500"><span>{app.category}</span><span>Version {app.version || "—"}</span><span>{app.platform || "—"}</span>{app.packageName && <span className="font-mono">{app.packageName}</span>}{app.versionCode && <span>code {app.versionCode}</span>}<a href={app.link} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">Repository</a>{app.downloadUrl && <a href={app.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Download</a>}</div>{app.changelog && <p className="mt-3 text-xs text-slate-400"><span className="font-semibold text-slate-300">Changelog:</span> {app.changelog}</p>}</div></div>
                   {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-medium border border-slate-700 hover:bg-slate-700">{app.status === "Approved" ? "Update" : "Edit"}</button>}
                 </div>
               ))}
@@ -339,7 +370,7 @@ export default function LumaDeveloperPortal() {
           </section>
         </div>
 
-        <div className="lg:col-span-1 space-y-6"><section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm"><h2 className="text-lg font-semibold text-white mb-4">Submission requirements</h2><ul className="space-y-3 text-sm text-slate-400"><li>Public open-source repository</li><li>Public app icon URL</li><li>Current app version</li><li>Target platform</li><li>Direct public download URL</li><li>Changelog required for updates</li><li>Standard open-source license</li></ul></section></div>
+        <div className="lg:col-span-1 space-y-6"><section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm"><h2 className="text-lg font-semibold text-white mb-4">Submission requirements</h2><ul className="space-y-3 text-sm text-slate-400"><li>Public open-source repository</li><li>Public app icon URL</li><li>Current app version</li><li>Target platform</li><li>Direct public download URL</li><li>Android: package name + versionCode</li><li>Changelog required for updates</li><li>Standard open-source license</li></ul></section></div>
       </div>
     </div>
   );
