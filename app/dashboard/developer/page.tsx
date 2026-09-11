@@ -13,7 +13,6 @@ type AppSubmission = {
   status: SubmissionStatus;
   submittedAt: string;
   category: string;
-  subcategory: string;
   licenseType: string;
   iconUrl: string;
   version: string;
@@ -32,7 +31,6 @@ type LumaSubmissionRow = {
   status: SubmissionStatus;
   submitted_at: string;
   category: string;
-  subcategory: string | null;
   license_type: string | null;
   icon_url: string | null;
   version: string | null;
@@ -43,28 +41,74 @@ type LumaSubmissionRow = {
   version_code: number | string | null;
 };
 
-const CATEGORY_OPTIONS: Record<string, string[]> = {
-  Productivity: ["Office", "Notes & Tasks", "Calendar & Time", "File Management"],
-  Entertainment: ["Streaming", "Podcasts", "Radio"],
-  Utilities: ["System Tools", "Backup & Sync", "Automation", "Calculators & Converters"],
-  Lifestyle: [],
-  "Health & Fitness": ["Fitness", "Nutrition", "Wellbeing"],
-  Games: ["Action", "Adventure", "Arcade", "Puzzle", "Racing", "Role Playing", "Simulation", "Strategy", "Casual"],
-  Development: ["IDEs & Editors", "Git & Version Control", "API & Networking Tools", "Terminal & Shell"],
-  Education: ["Languages", "Mathematics", "Programming", "Study Tools"],
-  Communication: ["Messaging", "Email", "VoIP & Calls"],
-  Internet: ["Browsers", "Download Managers", "Network Tools"],
-  Multimedia: ["Music & Audio", "Video", "Photography", "Graphics & Design"],
-  Finance: ["Budgeting", "Cryptocurrency"],
-  Science: ["Astronomy", "Electronics"],
-  "Navigation & Travel": ["Maps", "Public Transport", "Travel Planning"],
-  "Security & Privacy": ["Password Managers", "Authentication", "Encryption", "Privacy Tools"],
-  Accessibility: [],
-  Customization: ["Launchers", "Themes & Wallpapers"],
-  "Books & Reference": ["E-Books", "Dictionaries"],
-  "News & Weather": ["Weather", "News Readers"],
-  Social: ["Social Networks", "Forums & Communities"],
-};
+const FDROID_CATEGORIES = [
+  "AI Chat",
+  "App Manager",
+  "App Store & Updater",
+  "Battery",
+  "Bookmark",
+  "Browser",
+  "Calculator",
+  "Calendar & Agenda",
+  "Clock",
+  "Cloud Storage & File Sync",
+  "Connectivity",
+  "Contact",
+  "Development",
+  "Diet",
+  "DNS & Hosts",
+  "Draw",
+  "Ebook Reader",
+  "Email",
+  "File Encryption & Vault",
+  "File Transfer",
+  "Firewall",
+  "Finance Manager",
+  "Flashlight",
+  "Forum",
+  "Gallery",
+  "Games",
+  "Graphics",
+  "Habit Tracker",
+  "Health Manager",
+  "Icon Pack",
+  "Internet",
+  "Inventory",
+  "Keyboard & IME",
+  "Launcher",
+  "Local Media Player",
+  "Location Tracker & Sharer",
+  "Messaging",
+  "Money",
+  "Multimedia",
+  "Music Practice Tool",
+  "Navigation",
+  "Network Analyzer",
+  "News",
+  "Note",
+  "Online Media Player",
+  "Pass Wallet",
+  "Password & 2FA",
+  "Phone & SMS",
+  "Podcast",
+  "Public Transport",
+  "Radio",
+  "Reading",
+  "Recipe Manager",
+  "Remote Control",
+  "Science & Education",
+  "Security",
+  "Shopping",
+  "Sports & Health",
+  "System",
+  "Task",
+  "Theming",
+  "Time",
+  "Translator",
+  "VPN & Proxy",
+  "Weather",
+  "Writing",
+] as const;
 
 const LICENSE_OPTIONS = [
   ["MIT", "MIT License"],
@@ -98,8 +142,7 @@ export default function LumaDeveloperPortal() {
   const [appName, setAppName] = useState("");
   const [appDescription, setAppDescription] = useState("");
   const [appLink, setAppLink] = useState("");
-  const [appCategory, setAppCategory] = useState("Productivity");
-  const [appSubcategory, setAppSubcategory] = useState("Office");
+  const [appCategory, setAppCategory] = useState<string>("System");
   const [appLicenseType, setAppLicenseType] = useState("MIT");
   const [appIconUrl, setAppIconUrl] = useState("");
   const [appVersion, setAppVersion] = useState("");
@@ -115,7 +158,6 @@ export default function LumaDeveloperPortal() {
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
   const [loadingApps, setLoadingApps] = useState(true);
 
-  const subcategoryOptions = CATEGORY_OPTIONS[appCategory] ?? [];
   const isAndroid = appPlatform === "Android";
   const validAndroidMetadata = !isAndroid || (
     appPackageName.trim().length > 0 &&
@@ -123,16 +165,6 @@ export default function LumaDeveloperPortal() {
     /^\d+$/.test(appVersionCode.trim()) &&
     Number(appVersionCode) > 0
   );
-
-  useEffect(() => {
-    if (subcategoryOptions.length === 0) {
-      if (appSubcategory !== "") setAppSubcategory("");
-      return;
-    }
-    if (!subcategoryOptions.includes(appSubcategory)) {
-      setAppSubcategory(subcategoryOptions[0]);
-    }
-  }, [appCategory, appSubcategory, subcategoryOptions]);
 
   useEffect(() => {
     async function fetchApps() {
@@ -157,7 +189,6 @@ export default function LumaDeveloperPortal() {
           status: item.status,
           submittedAt: item.submitted_at,
           category: item.category,
-          subcategory: item.subcategory || "",
           licenseType: item.license_type || "",
           iconUrl: item.icon_url || "",
           version: item.version || "",
@@ -180,8 +211,7 @@ export default function LumaDeveloperPortal() {
     setAppName("");
     setAppDescription("");
     setAppLink("");
-    setAppCategory("Productivity");
-    setAppSubcategory("Office");
+    setAppCategory("System");
     setAppLicenseType("MIT");
     setAppIconUrl("");
     setAppVersion("");
@@ -202,8 +232,7 @@ export default function LumaDeveloperPortal() {
     setAppName(app.name);
     setAppDescription(app.description);
     setAppLink(app.link);
-    setAppCategory(app.category);
-    setAppSubcategory(app.subcategory);
+    setAppCategory(FDROID_CATEGORIES.includes(app.category as typeof FDROID_CATEGORIES[number]) ? app.category : "System");
     setAppLicenseType(app.licenseType || "MIT");
     setAppIconUrl(app.iconUrl);
     setAppVersion(app.version);
@@ -228,6 +257,7 @@ export default function LumaDeveloperPortal() {
       if (!user) throw new Error("Not authenticated");
       if (isApprovedUpdate && !appChangelog.trim()) throw new Error("A changelog is required for app updates.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
+      if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
 
       const appMetadata = {
@@ -235,7 +265,7 @@ export default function LumaDeveloperPortal() {
         description: appDescription.trim(),
         link: appLink.trim(),
         category: appCategory,
-        subcategory: appSubcategory || null,
+        subcategory: null,
         license_type: appLicenseType,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
@@ -263,7 +293,6 @@ export default function LumaDeveloperPortal() {
           .eq("status", editingStatus)
           .select()
           .single();
-
         data = result.data as LumaSubmissionRow | null;
         error = result.error;
       } else {
@@ -278,7 +307,6 @@ export default function LumaDeveloperPortal() {
           }])
           .select()
           .single();
-
         data = result.data as LumaSubmissionRow | null;
         error = result.error;
       }
@@ -294,7 +322,6 @@ export default function LumaDeveloperPortal() {
         status: data.status,
         submittedAt: data.submitted_at,
         category: data.category,
-        subcategory: data.subcategory || "",
         licenseType: data.license_type || "",
         iconUrl: data.icon_url || "",
         version: data.version || "",
@@ -380,19 +407,11 @@ export default function LumaDeveloperPortal() {
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Application Name</label><input type="text" required value={appName} onChange={(e) => setAppName(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
                   <div><label className="block text-sm font-medium text-slate-300 mb-2">Short Description</label><textarea rows={4} required value={appDescription} onChange={(e) => setAppDescription(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" /></div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
-                      <select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">
-                        {Object.keys(CATEGORY_OPTIONS).map((category) => <option key={category} value={category}>{category}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Subcategory</label>
-                      <select disabled={subcategoryOptions.length === 0} value={appSubcategory} onChange={(e) => setAppSubcategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white disabled:opacity-50">
-                        {subcategoryOptions.length === 0 ? <option value="">No subcategory</option> : subcategoryOptions.map((subcategory) => <option key={subcategory} value={subcategory}>{subcategory}</option>)}
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">F-Droid Category</label>
+                    <select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">
+                      {FDROID_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
                   </div>
 
                   <div>
@@ -408,15 +427,7 @@ export default function LumaDeveloperPortal() {
                     {appIconUrl.trim() && (
                       <div className="mt-4 flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          key={appIconUrl}
-                          src={appIconUrl}
-                          alt="App icon preview"
-                          className="h-20 w-20 shrink-0 rounded-2xl border border-slate-600 bg-slate-900 object-cover"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
+                        <img key={appIconUrl} src={appIconUrl} alt="App icon preview" className="h-20 w-20 shrink-0 rounded-2xl border border-slate-600 bg-slate-900 object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-white">App Icon Preview</p>
                           <p className="mt-1 break-all text-xs text-slate-400">{appIconUrl}</p>
@@ -450,7 +461,7 @@ export default function LumaDeveloperPortal() {
                 <div className="space-y-6">
                   <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-5 space-y-3 text-sm">
                     <p><span className="text-slate-400">Name:</span> <span className="text-white">{appName}</span></p>
-                    <p><span className="text-slate-400">Category:</span> <span className="text-white">{appCategory}{appSubcategory ? ` / ${appSubcategory}` : ""}</span></p>
+                    <p><span className="text-slate-400">F-Droid Category:</span> <span className="text-white">{appCategory}</span></p>
                     <p><span className="text-slate-400">License:</span> <span className="text-white">{appLicenseType}</span></p>
                     <p><span className="text-slate-400">Version:</span> <span className="text-white">{appVersion}</span></p>
                     <p><span className="text-slate-400">Platform:</span> <span className="text-white">{appPlatform}</span></p>
@@ -472,7 +483,7 @@ export default function LumaDeveloperPortal() {
                       <h3 className="font-semibold text-white">{app.name}</h3>
                       <span className={`px-2 py-0.5 rounded-full border text-xs ${getStatusColor(app.status)}`}>{app.status}</span>
                     </div>
-                    <p className="mt-1 text-sm text-slate-400">{app.category}{app.subcategory ? ` / ${app.subcategory}` : ""} · {app.licenseType || "No license"} · {app.version || "No version"}</p>
+                    <p className="mt-1 text-sm text-slate-400">{app.category} · {app.licenseType || "No license"} · {app.version || "No version"}</p>
                     {app.packageName && <p className="mt-1 text-xs text-slate-500">{app.packageName}{app.versionCode ? ` · versionCode ${app.versionCode}` : ""}</p>}
                   </div>
                   {(app.status === "Rejected" || app.status === "Approved") && <button type="button" onClick={() => beginEdit(app)} className="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">{app.status === "Approved" ? "Submit update" : "Edit & resubmit"}</button>}
@@ -488,7 +499,7 @@ export default function LumaDeveloperPortal() {
             <ul className="space-y-2 text-sm text-slate-400 list-disc pl-5">
               <li>Open-source application</li>
               <li>Valid project and download URLs</li>
-              <li>Category, optional subcategory and license</li>
+              <li>F-Droid category and open-source license</li>
               <li>Android: package name + versionCode</li>
               <li>Updates require a changelog</li>
             </ul>
