@@ -90,14 +90,8 @@ function asStringArray(value: unknown): string[] {
 
 function githubRepository(projectUrl: string): { owner: string; repo: string; branches: string[] } {
   let parsed: URL;
-  try {
-    parsed = new URL(projectUrl.trim());
-  } catch {
-    throw new Error("Please enter a valid GitHub repository URL.");
-  }
-  if (parsed.hostname.toLowerCase() !== "github.com") {
-    throw new Error("Fastlane metadata is currently read from GitHub repositories. Please use a github.com repository URL.");
-  }
+  try { parsed = new URL(projectUrl.trim()); } catch { throw new Error("Please enter a valid GitHub repository URL."); }
+  if (parsed.hostname.toLowerCase() !== "github.com") throw new Error("Fastlane metadata is currently read from GitHub repositories. Please use a github.com repository URL.");
   const parts = parsed.pathname.split("/").filter(Boolean);
   if (parts.length < 2) throw new Error("Please enter the URL of a GitHub repository.");
   const owner = parts[0];
@@ -113,19 +107,14 @@ async function fetchText(url: string): Promise<string | null> {
     if (!response.ok) return null;
     const value = (await response.text()).trim();
     return value || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 async function fetchPhoneScreenshots(owner: string, repo: string, branch: string, locale: string): Promise<string[]> {
   const path = `fastlane/metadata/android/${locale}/images/phoneScreenshots`;
   const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(branch)}`;
   try {
-    const response = await fetch(apiUrl, {
-      cache: "no-store",
-      headers: { Accept: "application/vnd.github+json" },
-    });
+    const response = await fetch(apiUrl, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } });
     if (!response.ok) return [];
     const data = await response.json();
     if (!Array.isArray(data)) return [];
@@ -134,17 +123,12 @@ async function fetchPhoneScreenshots(owner: string, repo: string, branch: string
       .sort((a, b) => String(a.name).localeCompare(String(b.name)))
       .map((item) => item.download_url)
       .filter((url): url is string => typeof url === "string" && url.length > 0);
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function fetchFastlaneMetadata(projectUrl: string, versionCode: string): Promise<FastlaneMetadata> {
   const numericVersionCode = Number(versionCode);
-  if (!Number.isInteger(numericVersionCode) || numericVersionCode <= 0) {
-    throw new Error("Enter a positive Android versionCode before checking Fastlane metadata.");
-  }
-
+  if (!Number.isInteger(numericVersionCode) || numericVersionCode <= 0) throw new Error("Enter a positive Android versionCode before checking Fastlane metadata.");
   const { owner, repo, branches } = githubRepository(projectUrl);
   const locales = ["en-US", "en-GB", "de-DE", "en", "de"];
 
@@ -156,22 +140,14 @@ async function fetchFastlaneMetadata(projectUrl: string, versionCode: string): P
       const shortDescription = await fetchText(`${base}/short_description.txt`);
       const fullDescription = await fetchText(`${base}/full_description.txt`);
       if (!shortDescription || !fullDescription) continue;
-
-      const changelog =
-        (await fetchText(`${base}/changelogs/${numericVersionCode}.txt`)) ??
-        (await fetchText(`${base}/changelogs/default.txt`));
+      const changelog = (await fetchText(`${base}/changelogs/${numericVersionCode}.txt`)) ?? (await fetchText(`${base}/changelogs/default.txt`));
       if (!changelog) continue;
-
       const screenshots = await fetchPhoneScreenshots(owner, repo, branch, locale);
       if (screenshots.length === 0) continue;
-
       return { title, shortDescription, fullDescription, changelog, screenshots, locale, branch };
     }
   }
-
-  throw new Error(
-    "Fastlane metadata is incomplete. Luma Store requires title.txt, short_description.txt, full_description.txt, a changelog for the versionCode (or default.txt), and at least one images/phoneScreenshots image."
-  );
+  throw new Error("Fastlane metadata is incomplete. Luma Store requires title.txt, short_description.txt, full_description.txt, a changelog for the versionCode (or default.txt), and at least one images/phoneScreenshots image.");
 }
 
 export default function LumaDeveloperPortal() {
@@ -182,6 +158,7 @@ export default function LumaDeveloperPortal() {
   const [appCategory, setAppCategory] = useState<string>("System");
   const [appLicenseType, setAppLicenseType] = useState("MIT");
   const [appIconUrl, setAppIconUrl] = useState("");
+  const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
   const [appPlatform, setAppPlatform] = useState("Android");
   const [appDownloadUrl, setAppDownloadUrl] = useState("");
@@ -198,44 +175,21 @@ export default function LumaDeveloperPortal() {
   const [loadingApps, setLoadingApps] = useState(true);
 
   const isAndroid = appPlatform === "Android";
-  const validAndroidMetadata = !isAndroid || (
-    appPackageName.trim().length > 0 &&
-    /^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) &&
-    /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0
-  );
-
-  const invalidateFastlane = () => {
-    setFastlaneMetadata(null);
-    setFastlaneError(null);
-  };
+  const validAndroidMetadata = !isAndroid || (appPackageName.trim().length > 0 && /^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) && /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0);
+  const invalidateFastlane = () => { setFastlaneMetadata(null); setFastlaneError(null); };
 
   useEffect(() => {
     async function fetchApps() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingApps(false); return; }
-      const { data, error } = await supabase
-        .from("luma_submissions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("submitted_at", { ascending: false });
+      const { data, error } = await supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false });
       if (!error && data) {
         setMyApps(data.map((item: LumaSubmissionRow) => ({
-          id: item.id,
-          name: item.name,
-          shortDescription: item.short_description || "",
-          description: item.description,
-          link: item.link || "",
-          status: item.status,
-          submittedAt: item.submitted_at,
-          category: item.category,
-          licenseType: item.license_type || "",
-          iconUrl: item.icon_url || "",
-          version: item.version || "",
-          platform: item.platform || "",
-          downloadUrl: item.download_url || "",
-          changelog: item.changelog || "",
-          packageName: item.package_name || "",
-          versionCode: item.version_code == null ? "" : String(item.version_code),
+          id: item.id, name: item.name, shortDescription: item.short_description || "", description: item.description,
+          link: item.link || "", status: item.status, submittedAt: item.submitted_at, category: item.category,
+          licenseType: item.license_type || "", iconUrl: item.icon_url || "", version: item.version || "",
+          platform: item.platform || "", downloadUrl: item.download_url || "", changelog: item.changelog || "",
+          packageName: item.package_name || "", versionCode: item.version_code == null ? "" : String(item.version_code),
           screenshots: asStringArray(item.screenshots),
         })));
       }
@@ -246,19 +200,19 @@ export default function LumaDeveloperPortal() {
 
   const resetForm = () => {
     setStep(1); setAppName(""); setAppLink(""); setAppCategory("System"); setAppLicenseType("MIT");
-    setAppIconUrl(""); setAppVersion(""); setAppPlatform("Android"); setAppDownloadUrl("");
-    setAppPackageName(""); setAppVersionCode(""); setFastlaneMetadata(null); setFastlaneError(null);
-    setFastlaneLoading(false); setEditingId(null); setEditingStatus(null);
+    setAppIconUrl(""); setIconPreviewError(false); setAppVersion(""); setAppPlatform("Android"); setAppDownloadUrl("");
+    setAppPackageName(""); setAppVersionCode(""); setFastlaneMetadata(null); setFastlaneError(null); setFastlaneLoading(false);
+    setEditingId(null); setEditingStatus(null);
   };
 
   const beginEdit = (app: AppSubmission) => {
     if (app.status !== "Rejected" && app.status !== "Approved") return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.link);
     setAppCategory(FDROID_CATEGORIES.includes(app.category as typeof FDROID_CATEGORIES[number]) ? app.category : "System");
-    setAppLicenseType(app.licenseType || "MIT"); setAppIconUrl(app.iconUrl); setAppVersion(app.version);
-    setAppPlatform(app.platform || "Android"); setAppDownloadUrl(app.downloadUrl);
-    setAppPackageName(app.packageName); setAppVersionCode(app.versionCode); setFastlaneMetadata(null);
-    setFastlaneError(null); setStep(1); setSubmitted(false); window.scrollTo({ top: 0, behavior: "smooth" });
+    setAppLicenseType(app.licenseType || "MIT"); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
+    setAppPlatform(app.platform || "Android"); setAppDownloadUrl(app.downloadUrl); setAppPackageName(app.packageName);
+    setAppVersionCode(app.versionCode); setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const verifyFastlane = async () => {
@@ -266,11 +220,8 @@ export default function LumaDeveloperPortal() {
     try {
       const metadata = await fetchFastlaneMetadata(appLink, appVersionCode);
       setFastlaneMetadata(metadata); setAppName(metadata.title);
-    } catch (error) {
-      setFastlaneError(error instanceof Error ? error.message : "Fastlane metadata could not be loaded.");
-    } finally {
-      setFastlaneLoading(false);
-    }
+    } catch (error) { setFastlaneError(error instanceof Error ? error.message : "Fastlane metadata could not be loaded."); }
+    finally { setFastlaneLoading(false); }
   };
 
   const isApprovedUpdate = editingStatus === "Approved";
@@ -283,45 +234,27 @@ export default function LumaDeveloperPortal() {
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
-
       const currentFastlaneMetadata = await fetchFastlaneMetadata(appLink.trim(), appVersionCode);
-      setFastlaneMetadata(currentFastlaneMetadata);
-      setAppName(currentFastlaneMetadata.title);
-
+      setFastlaneMetadata(currentFastlaneMetadata); setAppName(currentFastlaneMetadata.title);
       const appMetadata = {
-        name: currentFastlaneMetadata.title,
-        short_description: currentFastlaneMetadata.shortDescription,
-        description: currentFastlaneMetadata.fullDescription,
-        link: appLink.trim(),
-        category: appCategory,
-        subcategory: null,
-        license_type: appLicenseType,
-        icon_url: appIconUrl.trim(),
-        version: appVersion.trim(),
-        platform: appPlatform,
-        download_url: appDownloadUrl.trim(),
-        changelog: currentFastlaneMetadata.changelog,
-        package_name: isAndroid ? appPackageName.trim() : null,
-        version_code: isAndroid ? Number(appVersionCode) : null,
+        name: currentFastlaneMetadata.title, short_description: currentFastlaneMetadata.shortDescription,
+        description: currentFastlaneMetadata.fullDescription, link: appLink.trim(), category: appCategory, subcategory: null,
+        license_type: appLicenseType, icon_url: appIconUrl.trim(), version: appVersion.trim(), platform: appPlatform,
+        download_url: appDownloadUrl.trim(), changelog: currentFastlaneMetadata.changelog,
+        package_name: isAndroid ? appPackageName.trim() : null, version_code: isAndroid ? Number(appVersionCode) : null,
         screenshots: currentFastlaneMetadata.screenshots,
       };
-
       let data: LumaSubmissionRow | null = null;
       let error: { message?: string; code?: string; details?: string; hint?: string } | null = null;
       if (editingId && editingStatus) {
-        const result = await supabase.from("luma_submissions").update({
-          ...appMetadata, status: "Pending", review_message: null, status_updated_at: new Date().toISOString(),
-        }).eq("id", editingId).eq("user_id", user.id).eq("status", editingStatus).select().single();
+        const result = await supabase.from("luma_submissions").update({ ...appMetadata, status: "Pending", review_message: null, status_updated_at: new Date().toISOString() }).eq("id", editingId).eq("user_id", user.id).eq("status", editingStatus).select().single();
         data = result.data as LumaSubmissionRow | null; error = result.error;
       } else {
-        const result = await supabase.from("luma_submissions").insert([{
-          user_id: user.id, ...appMetadata, status: "Pending", submitted_at: new Date().toISOString(),
-        }]).select().single();
+        const result = await supabase.from("luma_submissions").insert([{ user_id: user.id, ...appMetadata, status: "Pending", submitted_at: new Date().toISOString() }]).select().single();
         data = result.data as LumaSubmissionRow | null; error = result.error;
       }
       if (error) throw error;
       if (!data) throw new Error("Submission could not be saved");
-
       const savedApp: AppSubmission = {
         id: data.id, name: data.name, shortDescription: data.short_description || "", description: data.description,
         link: data.link || "", status: data.status, submittedAt: data.submitted_at, category: data.category,
@@ -378,7 +311,26 @@ export default function LumaDeveloperPortal() {
                 <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg"><p className="text-sm text-indigo-300">Fastlane is required. App title, short description, full description, changelog and phone screenshots are imported from fastlane/metadata/android.</p></div>
                 <div><label className="block text-sm font-medium text-slate-300 mb-2">F-Droid Category</label><select value={appCategory} onChange={(e) => setAppCategory(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">{FDROID_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></div>
                 <div><label className="block text-sm font-medium text-slate-300 mb-2">Open-Source License</label><select required value={appLicenseType} onChange={(e) => setAppLicenseType(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white">{LICENSE_OPTIONS.map(([value,label]) => <option key={value} value={value}>{label} ({value})</option>)}</select></div>
-                <div><label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label><input type="url" required value={appIconUrl} onChange={(e) => setAppIconUrl(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" />{appIconUrl.trim() && <div className="mt-3 flex items-center gap-3"><img src={appIconUrl} alt="App icon preview" className="h-16 w-16 rounded-xl object-cover" /><span className="text-sm text-slate-400">App Icon Preview</span></div>}</div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">App Icon URL</label>
+                  <input type="url" required value={appIconUrl} onChange={(e) => { setAppIconUrl(e.target.value); setIconPreviewError(false); }} placeholder="https://example.com/icon.png" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white" />
+                  <div className="mt-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+                    <p className="mb-3 text-sm font-semibold text-white">App Icon Preview</p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-600 bg-slate-900">
+                        {appIconUrl.trim() && !iconPreviewError ? (
+                          <img key={appIconUrl} src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={() => setIconPreviewError(true)} onLoad={() => setIconPreviewError(false)} />
+                        ) : (
+                          <span className="px-2 text-center text-xs text-slate-500">{iconPreviewError ? "Icon konnte nicht geladen werden" : "Noch kein Icon"}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm ${iconPreviewError ? "text-red-400" : "text-slate-400"}`}>{iconPreviewError ? "Die URL liefert kein darstellbares Bild. Prüfe, ob sie direkt auf PNG/JPG/WebP zeigt." : appIconUrl.trim() ? "Vorschau wird direkt von der angegebenen URL geladen." : "Gib eine direkte Bild-URL ein, um die Vorschau zu sehen."}</p>
+                        {appIconUrl.trim() && <p className="mt-2 break-all text-xs text-slate-500">{appIconUrl.trim()}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex justify-end"><button type="button" onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-indigo-600 text-white">Next</button></div>
               </div>}
 
