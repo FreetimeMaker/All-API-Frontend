@@ -356,12 +356,8 @@ export default function WalloraShopPage() {
             🖼️ Wallpapers
           </button>
           <button
-            onClick={() => setActiveCategory("geoweather")}
-            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-              activeCategory === "geoweather"
-                ? "bg-slate-800 text-white border border-b-0 border-slate-700"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
+            onClick={() => router.push("/geoweather")}
+            className="px-4 py-2.5 text-sm font-medium rounded-t-lg text-slate-400 hover:text-slate-200 transition-colors"
           >
             🌤️ GeoWeather Subscriptions
           </button>
