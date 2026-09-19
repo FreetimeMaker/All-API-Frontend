@@ -7,6 +7,7 @@ import {
   appwriteAccount,
   appwriteFunctions,
   GEO_WEATHER_REDEEM_FUNCTION_ID,
+  GEO_WEATHER_PURCHASE_FUNCTION_ID,
   getGeoWeatherSubscription,
 } from "@/lib/appwrite/geoweather";
 import SolanaPayModal from "../components/dashboard/SolanaPayModal";
@@ -99,6 +100,26 @@ export default function GeoWeatherShopPage() {
     }
   }
 
+  async function activatePurchase(plan: Plan, paymentMethod: "solana" | "halliday", paymentReference: string) {
+    if (!user) throw new Error("Not signed in.");
+    const execution = await appwriteFunctions.createExecution({
+      functionId: GEO_WEATHER_PURCHASE_FUNCTION_ID,
+      body: JSON.stringify({
+        plan: plan.id.toLowerCase(),
+        paymentMethod,
+        paymentReference,
+        amount: plan.price,
+        currency: plan.currency,
+      }),
+      async: false,
+    });
+    const result = JSON.parse(execution.responseBody || "{}");
+    if (!result.ok) throw new Error(result.error || "Could not activate purchase.");
+    const refreshed = await getGeoWeatherSubscription(user.$id);
+    setActivePlan(refreshed);
+    setShopMsg(`Payment confirmed. ${refreshed} is now active.`);
+  }
+
   async function signOut() {
     await appwriteAccount.deleteSession({ sessionId: "current" });
     router.replace("/geoweather/login");
@@ -153,7 +174,7 @@ export default function GeoWeatherShopPage() {
                 ) : (
                   <div className="space-y-2">
                     <button onClick={() => { setPayingPlan(plan); setShowPayModal(true); }} className="w-full rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold hover:bg-violet-400">Pay with Solana</button>
-                    <HallidayPayButton amount={plan.price} label={`GeoWeather ${plan.name}`} onSuccess={() => { setActivePlan(plan.name); setShopMsg(`Payment successful for ${plan.name}.`); }} onError={(m) => setShopMsg(`Payment failed: ${m}`)} className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Card / Crypto</HallidayPayButton>
+                    <HallidayPayButton amount={plan.price} label={`GeoWeather ${plan.name}`} onSuccess={async (paymentReference: string = "halliday-confirmed") => { try { await activatePurchase(plan, "halliday", paymentReference); } catch (e: any) { setShopMsg(e?.message || "Could not activate purchase."); } }} onError={(m) => setShopMsg(`Payment failed: ${m}`)} className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Card / Crypto</HallidayPayButton>
                   </div>
                 )}
               </article>
@@ -179,13 +200,16 @@ export default function GeoWeatherShopPage() {
         amount={payingPlan?.price || 0}
         label={payingPlan ? `GeoWeather ${payingPlan.name}` : ""}
         message={payingPlan ? `Subscribe to ${payingPlan.name}` : ""}
-        onSuccess={() => {
-          if (payingPlan) {
-            setActivePlan(payingPlan.name);
-            setShopMsg(`Payment successful for ${payingPlan.name}.`);
-          }
+        onSuccess={async (signature) => {
+          const plan = payingPlan;
           setShowPayModal(false);
           setPayingPlan(null);
+          if (!plan) return;
+          try {
+            await activatePurchase(plan, "solana", signature);
+          } catch (e: any) {
+            setShopMsg(e?.message || "Payment was confirmed, but the subscription could not be activated.");
+          }
         }}
         onError={(m) => {
           setShopMsg(`Payment failed: ${m}`);
