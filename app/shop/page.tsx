@@ -1,14 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { proxyImageUrl } from "@/lib/proxy-image";
 import { validatePromo, normalizeCode } from "@/lib/promo-codes";
-import SolanaPayModal from "../components/dashboard/SolanaPayModal";
 import Spinner from "../components/Spinner";
-
-const HallidayPayButton = dynamic(() => import("../components/dashboard/HallidayPayButton"), { ssr: false });
 
 interface WalloraProduct {
   id: string;
@@ -27,24 +23,6 @@ interface CartItem extends WalloraProduct {
   quantity: number;
 }
 
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  features: string[];
-}
-
-const fallbackPlans: Plan[] = [
-  { id: "free", name: "Free", price: 0, currency: "USD", features: ["1 city", "Daily forecast", "100 Requests/Day"] },
-  { id: "freemium", name: "Freemium", price: 2.99, currency: "USD", features: ["5 cities", "Hourly forecast", "1000 Requests/Day"] },
-  { id: "premium", name: "Premium", price: 9.99, currency: "USD", features: ["Unlimited cities", "2000 Requests/Day"] },
-  { id: "ultrimium", name: "Ultrimium", price: 16.99, currency: "USD", features: ["Everything the App and Open-Meteo.com have to offer"] },
-];
-
-const planTier: Record<string, number> = { free: 0, freemium: 1, premium: 2, ultrimium: 3 };
-
-type ShopCategory = "wallpapers" | "geoweather";
 
 export default function WalloraShopPage() {
   const [user, setUser] = useState<any>(null);
@@ -53,26 +31,15 @@ export default function WalloraShopPage() {
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<ShopCategory>("wallpapers");
   const [wallpaperFilter, setWallpaperFilter] = useState<string>("All");
   const router = useRouter();
   const supabase = createClient();
 
-  const [plans, setPlans] = useState<Plan[]>(fallbackPlans);
-  const [activePlan, setActivePlan] = useState<string | null>(null);
-  const [payingPlan, setPayingPlan] = useState<Plan | null>(null);
-  const [showPayModal, setShowPayModal] = useState(false);
-  const [shopSuccess, setShopSuccess] = useState<string | null>(null);
-  const [shopError, setShopError] = useState<string | null>(null);
-  const [redeemCode, setRedeemCode] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
-  const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [promoState, setPromoState] = useState<{ code: string; amountOff: number; total: number } | null>(null);
   const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [promoChecking, setPromoChecking] = useState(false);
 
-  const currentTier = activePlan ? (planTier[activePlan.toLowerCase()] ?? -1) : -1;
 
   const wallpaperCategories = ["All", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))];
   const filteredProducts = wallpaperFilter === "All" ? products : products.filter((p) => p.category === wallpaperFilter);
@@ -124,36 +91,6 @@ export default function WalloraShopPage() {
         setLoading(false);
       });
 
-    // Load GeoWeather plans + current plan
-    fetch("https://api.free-time.me/v2/geoweather/subscriptions/plans")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) {
-          const raw = Array.isArray(data) ? data : data.plans || [];
-          if (raw.length > 0) {
-            setPlans(raw.map((p: Record<string, unknown>) => ({
-              id: String(p.id || p.planId || p.slug || ""),
-              name: String(p.name || p.plan || p.id || ""),
-              price: Number(p.price || p.amount || 0),
-              currency: String(p.currency || "USD"),
-              features: Array.isArray(p.features) ? p.features.map(String) : [],
-            })));
-          }
-        }
-      })
-      .catch(() => {});
-
-    supabase
-      .from("geoweather_codes")
-      .select("type")
-      .eq("used_by", user.id)
-      .eq("is_used", true)
-      .order("used_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }: { data: { type: string } | null }) => {
-        if (data?.type) setActivePlan(data.type);
-      });
   }, [user]);
 
   useEffect(() => {
@@ -250,61 +187,6 @@ export default function WalloraShopPage() {
     setPromoMsg(null);
   };
 
-  function handlePlanPay(plan: Plan) {
-    if (plan.price === 0) return;
-    setPayingPlan(plan);
-    setShopError(null);
-    setShopSuccess(null);
-    setShowPayModal(true);
-  }
-
-  function handlePaymentSuccess() {
-    setShowPayModal(false);
-    setPayingPlan(null);
-    if (payingPlan) {
-      setActivePlan(payingPlan.name);
-      setShopSuccess(`Successfully subscribed to ${payingPlan.name}!`);
-      setTimeout(() => setShopSuccess(null), 8000);
-    }
-  }
-
-  function handlePaymentError(msg: string) {
-    setShowPayModal(false);
-    setPayingPlan(null);
-    setShopError(`Payment failed: ${msg}`);
-    setTimeout(() => setShopError(null), 5000);
-  }
-
-  async function handleRedeem() {
-    const code = redeemCode.trim();
-    if (!code) return;
-
-    setRedeeming(true);
-    setRedeemMsg(null);
-
-    try {
-      const { data, error } = await supabase.rpc("redeem_code", { code });
-
-      if (error) {
-        setRedeemMsg({ ok: false, text: error.message || "Failed to redeem code." });
-        return;
-      }
-
-      if (data?.success) {
-        const planName = data.plan || data.type || "selected";
-        setActivePlan(planName);
-        setRedeemCode("");
-        setRedeemMsg({ ok: true, text: `Code redeemed! You now have access to the ${planName} plan.` });
-      } else {
-        setRedeemMsg({ ok: false, text: data?.error || "Invalid or already used code." });
-      }
-    } catch {
-      setRedeemMsg({ ok: false, text: "An unexpected error occurred." });
-    } finally {
-      setRedeeming(false);
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center bg-slate-950">
@@ -322,10 +204,9 @@ export default function WalloraShopPage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-white">All API Shop</h1>
-            <p className="text-sm text-slate-400">GeoWeather subscriptions and premium wallpapers</p>
+            <p className="text-sm text-slate-400">Premium wallpapers</p>
           </div>
-          {activeCategory === "wallpapers" && (
-            <button
+                      <button
               onClick={() => setCartOpen(!cartOpen)}
               className="relative p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors"
             >
@@ -338,31 +219,8 @@ export default function WalloraShopPage() {
                 </span>
               )}
             </button>
-          )}
         </div>
       </header>
-
-      {/* Category Tabs */}
-      <div className="max-w-7xl mx-auto px-6 pt-6">
-        <div className="flex gap-2 border-b border-slate-800">
-          <button
-            onClick={() => setActiveCategory("wallpapers")}
-            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-              activeCategory === "wallpapers"
-                ? "bg-slate-800 text-white border border-b-0 border-slate-700"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            🖼️ Wallpapers
-          </button>
-          <button
-            onClick={() => router.push("/geoweather")}
-            className="px-4 py-2.5 text-sm font-medium rounded-t-lg text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            🌤️ GeoWeather Subscriptions
-          </button>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {shopSuccess && (
@@ -376,114 +234,7 @@ export default function WalloraShopPage() {
           </div>
         )}
 
-        {activeCategory === "geoweather" ? (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => (
-                <div key={plan.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col hover:border-slate-700 transition-all">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-white capitalize">{plan.name}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">GeoWeather Subscription</p>
-                  </div>
-                  <div className="mb-6">
-                    <span className="text-3xl font-bold text-white">
-                      {plan.price === 0 ? "Free" : `$${plan.price}`}
-                    </span>
-                    <span className="text-sm text-slate-400 ml-1">{plan.currency}</span>
-                    {plan.price > 0 && (
-                      <p className="text-xs text-slate-500 mt-1">Pay once with Solana Pay</p>
-                    )}
-                  </div>
-                  {plan.features.length > 0 && (
-                    <ul className="space-y-2 mb-6 flex-1">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-slate-300">
-                          <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="mt-auto">
-                    {plan.price === 0 ? (
-                      <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-slate-800 text-slate-500 cursor-default">
-                        Free Tier
-                      </button>
-                    ) : planTier[plan.id] !== undefined && planTier[plan.id] <= currentTier ? (
-                      <button disabled className="w-full py-2.5 text-sm font-medium rounded-lg bg-emerald-900/50 text-emerald-300 border border-emerald-800 cursor-default flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                        {planTier[plan.id] === currentTier ? "Current Plan" : "Included in your plan"}
-                      </button>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handlePlanPay(plan)}
-                          disabled={showPayModal}
-                          className="w-full py-2.5 text-sm font-medium rounded-lg bg-[#9945FF] text-white hover:bg-[#8833EE] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M2.5 5.5L8 2L13.5 5.5V10.5L8 14L2.5 10.5V5.5Z" fill="white" />
-                          </svg>
-                          Pay ${plan.price} with Solana
-                        </button>
-                        <HallidayPayButton
-                          amount={plan.price}
-                          label={`GeoWeather ${plan.name}`}
-                          onSuccess={handlePaymentSuccess}
-                          onError={handlePaymentError}
-                          className="w-full py-2.5 text-sm font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Pay ${plan.price} with Card / Crypto
-                        </HallidayPayButton>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {currentTier < 3 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-white mb-1">Redeem a Code</h2>
-                <p className="text-sm text-slate-400 mb-4">Have a promo or gift code? Enter it below to activate your subscription.</p>
-                {redeemMsg && (
-                  <div className={`px-4 py-3 rounded-lg text-sm font-medium mb-4 ${redeemMsg.ok ? "bg-emerald-950/60 border border-emerald-800/50 text-emerald-300" : "bg-amber-950/60 border border-amber-800/50 text-amber-300"}`}>
-                    {redeemMsg.text}
-                  </div>
-                )}
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={redeemCode}
-                    onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleRedeem(); }}
-                    placeholder="Enter code"
-                    disabled={redeeming}
-                    className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm font-mono tracking-wider focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={handleRedeem}
-                    disabled={redeeming || !redeemCode.trim()}
-                    className="px-6 py-2.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {redeeming ? "Redeeming..." : "Redeem"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-500">
-                Payments are processed via Solana Pay. Scan the QR code with any Solana wallet (Phantom, Solflare, etc.).
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
+        
             {/* Wallpaper Category Filter */}
             <div className="flex flex-wrap gap-2 mb-6">
               {wallpaperCategories.map((cat) => (
@@ -564,12 +315,11 @@ export default function WalloraShopPage() {
                 <p className="text-slate-400">No wallpapers available in this category.</p>
               </div>
             )}
-          </>
-        )}
+
       </div>
 
       {/* Cart Sidebar */}
-      {cartOpen && activeCategory === "wallpapers" && (
+      {cartOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
@@ -712,15 +462,6 @@ export default function WalloraShopPage() {
         </div>
       )}
 
-      <SolanaPayModal
-        open={showPayModal}
-        amount={payingPlan?.price || 0}
-        label={payingPlan ? `GeoWeather ${payingPlan.name}` : ""}
-        message={payingPlan ? `Subscribe to ${payingPlan.name} plan` : ""}
-        onSuccess={handlePaymentSuccess}
-        onError={handlePaymentError}
-        onClose={() => { setShowPayModal(false); setPayingPlan(null); }}
-      />
     </div>
   );
 }

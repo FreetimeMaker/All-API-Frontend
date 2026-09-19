@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     default: "All API — Freetime Maker",
     template: "%s | All API",
   },
-  description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
+  description: "Manage your Freetime Maker account, API access, and digital purchases.",
   metadataBase: new URL("https://dashboard.free-time.me"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "All API Dashboard",
     title: "All API — Freetime Maker",
-    description: "Manage GeoWeather subscriptions and API access from one dashboard. Pay with Solana.",
+    description: "Manage your Freetime Maker account, API access, and digital purchases.",
   },
 };
 

@@ -14,7 +14,6 @@ from unnest(array[
 
 update public.luma_submissions
 set category = case
-  when name = 'GeoWeather' then 'Weather'
   when name = 'SuperSMP Companion' then 'Games'
   when category in (select name from public.store_categories) then category
   else 'System'

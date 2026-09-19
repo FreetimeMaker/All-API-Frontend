@@ -22,12 +22,8 @@ const faqs: FaqItem[] = [
     a: "Open the Shop, go to the Wallpapers tab, add the wallpapers you want to your cart, then proceed to checkout. Payment is handled securely via Solana Pay — scan the QR code with any Solana wallet (Phantom, Solflare, etc.).",
   },
   {
-    q: "How do GeoWeather subscriptions work?",
-    a: "Head to the Shop and open the GeoWeather Subscriptions tab. Pick a plan and pay for it with Solana Pay. If you have a promo or gift code, you can redeem it on the same page to activate a plan.",
-  },
-  {
     q: "How do I use a promo code?",
-    a: "In the wallpaper cart, enter your code in the Promo field before checking out — the discount is applied to your total automatically. For GeoWeather, use the Redeem a Code box in the Subscriptions tab.",
+    a: "In the wallpaper cart, enter your code in the Promo field before checking out — the discount is applied to your total automatically.",
   },
   {
     q: "Where can I find my purchased wallpapers?",
@@ -127,7 +123,7 @@ export default function SupportPage() {
 
   if (!user) return null;
 
-  const categories = ["General", "Payments", "GeoWeather", "Wallpapers", "Promo Codes", "Bug Report", "Other"];
+  const categories = ["General", "Payments", "Wallpapers", "Promo Codes", "Bug Report", "Other"];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

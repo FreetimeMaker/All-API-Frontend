@@ -36,18 +36,11 @@ interface Purchase {
   purchasedAt: string;
 }
 
-interface RedeemedCode {
-  id: number;
-  type: string;
-  used_at: string;
-}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [purchasedWallpapers, setPurchasedWallpapers] = useState<Wallpaper[]>([]);
-  const [redeemedCodes, setRedeemedCodes] = useState<RedeemedCode[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -80,21 +73,6 @@ export default function DashboardPage() {
           setPurchasedWallpapers(purchasedWallpapersData);
         }
 
-        supabase
-          .from("geoweather_codes")
-          .select("id, type, used_at")
-          .eq("used_by", authRes.data.user.id)
-          .eq("is_used", true)
-          .order("used_at", { ascending: false })
-          .then(({ data, error }: { data: { id: number; type: string; used_at: string }[] | null; error: { message: string } | null }) => {
-            if (!error && data && data.length > 0) {
-              setRedeemedCodes(data as RedeemedCode[]);
-              if (!currentPlan && data.length > 0) {
-                setCurrentPlan(data[0].type);
-              }
-            }
-          })
-          .catch(() => {});
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -117,13 +95,6 @@ export default function DashboardPage() {
       icon: "🛡️",
       color: health?.ok ? "emerald" : "red",
     },
-    {
-      title: "Current Plan",
-      value: currentPlan ? currentPlan : "Free",
-      change: currentPlan ? "Active" : "No plan",
-      icon: "🌤️",
-      color: "cyan",
-    },
   ];
 
   return (
@@ -133,23 +104,6 @@ export default function DashboardPage() {
         <p className="text-slate-400">Welcome, {name}. Here&apos;s your Freetime Maker dashboard.</p>
       </header>
 
-      {currentPlan && (
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-gradient-to-r from-indigo-900/40 to-slate-800 rounded-xl border border-indigo-700/50 p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Current Plan</p>
-                <p className="text-xl font-bold text-slate-100">{currentPlan}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 max-w-6xl mx-auto">
         {accountStats.map((stat, i) => (
@@ -217,34 +171,6 @@ export default function DashboardPage() {
 
       {purchasedWallpapers.length > 0 && (
         <div className="max-w-6xl mx-auto space-y-4">
-          {redeemedCodes.length > 0 && (
-            <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
-              <div className="p-4 border-b border-slate-700">
-                <h2 className="font-semibold text-slate-100">Redeemed Codes</h2>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {redeemedCodes.map((code) => (
-                    <div key={code.id} className="bg-slate-900 rounded-lg border border-slate-700 p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-slate-100 capitalize">{code.type}</h3>
-                          <p className="text-xs text-slate-400 mt-1">GeoWeather Subscription</p>
-                        </div>
-                        <span className="ml-2 shrink-0 px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-900/50 text-emerald-400 border border-emerald-800">
-                          Active
-                        </span>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-slate-500">Redeemed {new Date(code.used_at).toLocaleDateString()}</span>
-                        <span className="text-[10px] text-emerald-400 font-medium">Code</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
 
           {purchasedWallpapers.length > 0 && (
             <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
