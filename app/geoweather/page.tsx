@@ -174,7 +174,7 @@ export default function GeoWeatherShopPage() {
                 ) : (
                   <div className="space-y-2">
                     <button onClick={() => { setPayingPlan(plan); setShowPayModal(true); }} className="w-full rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold hover:bg-violet-400">Pay with Solana</button>
-                    <HallidayPayButton amount={plan.price} label={`GeoWeather ${plan.name}`} onSuccess={async (paymentReference: string = "halliday-confirmed") => { try { await activatePurchase(plan, "halliday", paymentReference); } catch (e: any) { setShopMsg(e?.message || "Could not activate purchase."); } }} onError={(m) => setShopMsg(`Payment failed: ${m}`)} className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Card / Crypto</HallidayPayButton>
+                    <HallidayPayButton amount={plan.price} label={`GeoWeather ${plan.name}`} onSuccess={async (payload?: unknown) => { const paymentReference = typeof payload === "string" ? payload : JSON.stringify(payload ?? "halliday-confirmed"); try { await activatePurchase(plan, "halliday", paymentReference); } catch (e: any) { setShopMsg(e?.message || "Could not activate purchase."); } }} onError={(m) => setShopMsg(`Payment failed: ${m}`)} className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Card / Crypto</HallidayPayButton>
                   </div>
                 )}
               </article>
