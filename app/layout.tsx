@@ -36,8 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950">
-        <header className="liquid-glass-topbar sticky top-0 z-50 w-full border-b px-6 py-3">
+      <body className="min-h-full flex flex-col bg-slate-950 pt-[73px]">
+        <header className="liquid-glass-topbar fixed inset-x-0 top-0 z-[100] w-full border-b px-6 py-3">
           <AuthNav />
         </header>
         <main className="flex-1">{children}</main>

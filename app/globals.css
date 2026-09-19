@@ -118,3 +118,64 @@ main :where(button, a[class*="rounded"]) {
     background-color: rgb(15 23 42 / 0.94) !important;
   }
 }
+
+
+/* Strong global glass surface coverage */
+:where(header, footer, main, nav, section, article, aside, form, dialog, [role="dialog"]) {
+  isolation: isolate;
+}
+
+main :where(
+  [class*="bg-"],
+  [class*="border-"],
+  [class*="shadow"],
+  [class*="rounded"]
+):not(img):not(svg) {
+  -webkit-backdrop-filter: blur(20px) saturate(155%);
+  backdrop-filter: blur(20px) saturate(155%);
+}
+
+main :where(
+  [class*="bg-slate-"],
+  [class*="bg-gray-"],
+  [class*="bg-zinc-"],
+  [class*="bg-neutral-"],
+  [class*="bg-black"],
+  [class*="bg-white"]
+):not(img):not(svg) {
+  background-color: rgb(15 23 42 / 0.50) !important;
+}
+
+main :where(
+  [class*="border-slate-"],
+  [class*="border-gray-"],
+  [class*="border-zinc-"],
+  [class*="border-white"]
+) {
+  border-color: rgb(255 255 255 / 0.12) !important;
+}
+
+.liquid-glass-topbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  background: linear-gradient(135deg, rgb(15 23 42 / 0.62), rgb(30 41 59 / 0.38));
+  -webkit-backdrop-filter: blur(28px) saturate(175%);
+  backdrop-filter: blur(28px) saturate(175%);
+}
+
+.liquid-glass-topbar nav :where(a, button, div[class*="rounded"]) {
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass-topbar,
+  .liquid-glass-footer,
+  main :where([class*="bg-"]) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
