@@ -66,3 +66,55 @@ span {
     touch-action: manipulation;
   }
 }
+
+
+/* Site-wide Liquid Glass */
+body {
+  background:
+    radial-gradient(circle at 15% 10%, rgb(99 102 241 / 0.14), transparent 30rem),
+    radial-gradient(circle at 85% 20%, rgb(14 165 233 / 0.10), transparent 32rem),
+    #020617;
+  background-attachment: fixed;
+}
+
+.liquid-glass-topbar,
+.liquid-glass-footer {
+  background: rgb(15 23 42 / 0.58);
+  border-color: rgb(255 255 255 / 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+main :where(article, section, form, aside, [class*="rounded-xl"], [class*="rounded-2xl"], [class*="rounded-3xl"]) {
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+main :where([class*="bg-slate-800"], [class*="bg-slate-900"], [class*="bg-slate-950"]) {
+  background-color: rgb(15 23 42 / 0.54) !important;
+  border-color: rgb(255 255 255 / 0.11) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 12px 38px rgb(0 0 0 / 0.16);
+}
+
+main :where(button, a[class*="rounded"], input, textarea, select) {
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+}
+
+main :where(input, textarea, select) {
+  background-color: rgb(15 23 42 / 0.46) !important;
+  border-color: rgb(255 255 255 / 0.13) !important;
+}
+
+main :where(button, a[class*="rounded"]) {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.10);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass-topbar,
+  .liquid-glass-footer,
+  main :where([class*="bg-slate-800"], [class*="bg-slate-900"], [class*="bg-slate-950"]) {
+    background-color: rgb(15 23 42 / 0.94) !important;
+  }
+}

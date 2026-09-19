@@ -37,11 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-950">
-        <header className="w-full bg-slate-900 border-b border-slate-800 py-3 px-6">
+        <header className="liquid-glass-topbar sticky top-0 z-50 w-full border-b px-6 py-3">
           <AuthNav />
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="w-full bg-slate-900 border-t border-slate-800 py-4 px-6 text-center">
+        <footer className="liquid-glass-footer w-full border-t py-4 px-6 text-center">
           <p className="text-xs text-slate-500">&copy; 2026 Freetime Maker</p>
         </footer>
       </body>
