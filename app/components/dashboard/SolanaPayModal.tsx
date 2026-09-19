@@ -122,9 +122,9 @@ export default function SolanaPayModal({ open, amount, label, message, onSuccess
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2 py-3 backdrop-blur-sm sm:px-4 sm:py-6" onClick={onClose}>
+      <div className="w-[calc(100vw-1rem)] max-w-lg max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-4 shadow-xl sm:w-full sm:p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h3 className="text-lg font-semibold text-slate-100">Pay with Solana</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -133,8 +133,8 @@ export default function SolanaPayModal({ open, amount, label, message, onSuccess
           </button>
         </div>
 
-        <div className="text-center mb-4">
-          <p className="text-2xl font-bold text-slate-100">${amount.toFixed(2)} USDC</p>
+        <div className="text-center mb-3 sm:mb-4">
+          <p className="text-xl font-bold text-slate-100 sm:text-2xl">${amount.toFixed(2)} USDC</p>
           <p className="text-sm text-slate-400 mt-1">{label}</p>
         </div>
 
@@ -150,11 +150,11 @@ export default function SolanaPayModal({ open, amount, label, message, onSuccess
           </div>
         )}
 
-        <div className="flex justify-center mb-4">
-          <div ref={qrRef} className="bg-white rounded-xl p-3" />
+        <div className="flex justify-center mb-3 sm:mb-4">
+          <div ref={qrRef} className="max-w-[min(70vw,260px)] overflow-hidden rounded-xl bg-white p-2 [&_canvas]:!h-auto [&_canvas]:!w-full sm:p-3" />
         </div>
 
-        <p className="text-xs text-slate-500 text-center mb-4">
+        <p className="mb-3 text-center text-xs text-slate-500 sm:mb-4">
           Scan with Phantom, Solflare, or any Solana wallet
         </p>
 
