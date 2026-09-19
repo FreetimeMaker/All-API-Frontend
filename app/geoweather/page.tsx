@@ -193,10 +193,10 @@ export default function GeoWeatherShopPage() {
             <h2 className="text-xl font-semibold">Redeem GeoWeather code</h2>
             <p className="mt-1 text-sm text-slate-400">Codes are redeemed directly through the GeoWeather Appwrite function.</p>
             {redeemMsg && <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">{redeemMsg}</div>}
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={(e) => { e.preventDefault(); if (!redeeming && redeemCode.trim()) void redeem(); }}>
               <input value={redeemCode} onChange={(e) => setRedeemCode(e.target.value.toUpperCase())} className="flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono outline-none focus:border-sky-400/70" placeholder="CODE" />
-              <button onClick={redeem} disabled={redeeming || !redeemCode.trim()} className="rounded-xl bg-sky-500 px-6 py-3 font-semibold text-slate-950 hover:bg-sky-400 disabled:opacity-50">{redeeming ? "Redeeming..." : "Redeem"}</button>
-            </div>
+              <button type="submit" disabled={redeeming || !redeemCode.trim()} className="rounded-xl bg-sky-500 px-6 py-3 font-semibold text-slate-950 hover:bg-sky-400 disabled:opacity-50">{redeeming ? "Redeeming..." : "Redeem"}</button>
+            </form>
           </div>
         )}
       </section>
