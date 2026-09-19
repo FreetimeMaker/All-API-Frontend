@@ -151,7 +151,7 @@ export default function SolanaPayModal({ open, amount, label, message, onSuccess
         )}
 
         <div className="flex justify-center mb-3 sm:mb-4">
-          <div ref={qrRef} className="aspect-square w-[min(72vw,280px)] shrink-0 overflow-hidden rounded-xl bg-white p-2 sm:w-[280px] sm:p-3 [&_canvas]:!block [&_canvas]:!h-full [&_canvas]:!w-full [&_canvas]:!object-contain" />
+          <div ref={qrRef} className="aspect-square w-[180px] max-w-full shrink-0 overflow-hidden rounded-xl bg-white p-2 sm:w-[200px] sm:p-3 [&_canvas]:!block [&_canvas]:!h-full [&_canvas]:!w-full [&_canvas]:!object-contain" />
         </div>
 
         <p className="mb-3 text-center text-xs text-slate-500 sm:mb-4">
