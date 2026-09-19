@@ -47,13 +47,19 @@ export default function GeoWeatherShopPage() {
 
   useEffect(() => {
     (async () => {
+      let current;
       try {
-        const current = await appwriteAccount.get();
+        current = await appwriteAccount.get();
         setUser(current);
-        setActivePlan(await getGeoWeatherSubscription(current.$id));
       } catch {
         router.replace("/geoweather/login");
         return;
+      }
+
+      try {
+        setActivePlan(await getGeoWeatherSubscription(current.$id));
+      } catch {
+        setActivePlan("free");
       }
 
       try {

@@ -151,7 +151,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 gap-4 max-w-6xl mx-auto">
         {accountStats.map((stat, i) => (
           <div key={i} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start">
@@ -215,7 +215,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {(purchasedWallpapers.length > 0 || redeemedCodes.length > 0) && (
+      {purchasedWallpapers.length > 0 && (
         <div className="max-w-6xl mx-auto space-y-4">
           {redeemedCodes.length > 0 && (
             <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
