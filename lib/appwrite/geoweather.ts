@@ -9,6 +9,8 @@ export const GEO_WEATHER_SUBSCRIPTIONS_TABLE =
   process.env.NEXT_PUBLIC_APPWRITE_GEOWEATHER_SUBSCRIPTIONS_TABLE || "geoweather_subscriptions";
 export const GEO_WEATHER_REDEEM_FUNCTION_ID =
   process.env.NEXT_PUBLIC_APPWRITE_GEOWEATHER_REDEEM_FUNCTION_ID || "redeem-geoweather-code";
+export const GEO_WEATHER_PURCHASE_FUNCTION_ID =
+  process.env.NEXT_PUBLIC_APPWRITE_GEOWEATHER_PURCHASE_FUNCTION_ID || "activate-geoweather-purchase";
 
 export const appwriteClient = new Client()
   .setEndpoint(endpoint)
