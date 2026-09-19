@@ -36,7 +36,7 @@ export function signInGeoWeatherWithOAuth(provider: "github" | "gitlab") {
   const origin = window.location.origin;
   appwriteAccount.createOAuth2Session({
     provider: provider === "github" ? OAuthProvider.Github : OAuthProvider.Gitlab,
-    success: `${origin}/shop/geoweather`,
-    failure: `${origin}/shop/geoweather/login?error=oauth`,
+    success: `${origin}/geoweather`,
+    failure: `${origin}/geoweather/login?error=oauth`,
   });
 }
