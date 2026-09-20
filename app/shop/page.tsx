@@ -223,16 +223,6 @@ export default function WalloraShopPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {shopSuccess && (
-          <div className="mb-6 bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 px-4 py-3 rounded-lg text-sm font-medium">
-            {shopSuccess}
-          </div>
-        )}
-        {shopError && (
-          <div className="mb-6 bg-amber-950/60 border border-amber-800/50 text-amber-300 px-4 py-3 rounded-lg text-sm">
-            {shopError}
-          </div>
-        )}
 
         
             {/* Wallpaper Category Filter */}
